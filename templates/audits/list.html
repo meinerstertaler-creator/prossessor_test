@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}Spezialaudits Auftragsverarbeiter{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Spezialaudits Auftragsverarbeiter</h1>
+        <p class="text-muted mb-0">Spezialisierter Nebenbereich für Audits zu Auftragsverarbeitern.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'audit_dashboard' %}" class="btn btn-outline-secondary">Zur Auditübersicht</a>
+        <a href="{% url 'audit_dashboard' %}" class="btn btn-primary">Neues Audit</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Jahr</th>
+                            <th>Auftragsverarbeiter</th>
+                            <th>Typ</th>
+                            <th>Status</th>
+                            <th>Fällig</th>
+                            <th>Ergebnis</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>{{ item.audit_year }}</td>
+                                <td>{{ item.processor.name }}</td>
+                                <td>{{ item.get_audit_type_display }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>{{ item.due_date|default:"—" }}</td>
+                                <td>
+                                    {% if item.overall_result %}
+                                        {{ item.get_overall_result_display }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'audit_detail' item.pk %}" class="btn btn-sm btn-outline-primary">Öffnen</a>
+                                    <a href="{% url 'audit_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">Bearbeiten</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Es sind noch keine Spezialaudits vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

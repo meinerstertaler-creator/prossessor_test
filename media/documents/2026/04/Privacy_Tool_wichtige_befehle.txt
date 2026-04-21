@@ -1,0 +1,29 @@
+python manage.py reset_case_data setztz verfahren, manahme usf zurück
+
+-> es oll späetr eien mandnatenbuogener Befehl ergänzt werden
+
+python manage.py seed_standard_cases --reset
+spielt die Standard cases neu ein
+
+-------------------------------------------------
+
+ZUrücksetzen der Verfharen:
+
+1.Python manage.py Shell
+2. from processing.models import ProcessingActivity
+ProcessingActivity.objects.all().delete()
+exit()
+
+oder auch der DSFA und Bewrtungen
+
+from processing.models import ProcessingActivity
+from legal.models import LegalAssessment
+from dpia.models import DPIA
+
+LegalAssessment.objects.all().delete()
+DPIA.objects.all().delete()
+ProcessingActivity.objects.all().delete()
+exit()
+-----------------------------------------------------
+
+Übergabe neuer Verfharen

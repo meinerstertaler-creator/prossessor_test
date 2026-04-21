@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}PROSSESSOR{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .content-container {
+            max-width: 1400px;
+        }
+
+        .tenant-switch-form .form-select {
+            max-width: 320px;
+        }
+
+        .logout-form {
+            margin: 0;
+            padding: 0;
+        }
+
+        .logout-form button {
+            border: 0;
+            background: none;
+            padding: 0.5rem 1rem;
+            color: #fff;
+        }
+
+        .btn {
+            white-space: nowrap;
+        }
+
+        .nav-link.disabled {
+            opacity: 0.65;
+            pointer-events: none;
+        }
+
+        .column-resizer {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 12px;
+            height: 100%;
+            cursor: col-resize;
+            z-index: 50;
+            user-select: none;
+            background: transparent;
+        }
+
+        .column-resizer::before {
+            content: "";
+            position: absolute;
+            top: 20%;
+            bottom: 20%;
+            left: 50%;
+            width: 2px;
+            transform: translateX(-50%);
+            background: rgba(108, 117, 125, 0.45);
+            border-radius: 2px;
+        }
+
+        th.resizable-column:hover .column-resizer::before,
+        th.resizable-column.resizing .column-resizer::before {
+            background: rgba(13, 110, 253, 0.9);
+        }
+
+        .table-resize-guide {
+            position: fixed;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(13, 110, 253, 0.75);
+            z-index: 3000;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+
+{% if request.resolver_match and request.resolver_match.url_name != 'login' %}
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm sticky-top mb-4">
+    <div class="container-fluid content-container">
+        <a class="navbar-brand fw-semibold" href="/core/">PROSSESSOR</a>
+
+        <button class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar"
+                aria-expanded="false"
+                aria-label="Navigation ein-/ausblenden">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="mainNavbar">
+            <ul class="navbar-nav me-auto mb-2 mb-xxl-0">
+                <li class="nav-item"><a class="nav-link" href="/core/">Übersicht</a></li>
+                <li class="nav-item"><a class="nav-link" href="/processing/">Verfahren</a></li>
+                <li class="nav-item"><a class="nav-link" href="/processors/">Auftragsverarbeiter</a></li>
+                <li class="nav-item"><a class="nav-link" href="/audits/">Audits</a></li>
+                <li class="nav-item"><a class="nav-link" href="/actions/">Maßnahmen</a></li>
+                <li class="nav-item"><a class="nav-link" href="/documents/">Dokumente</a></li>
+                <li class="nav-item"><a class="nav-link" href="/reports/">Berichte</a></li>
+                <li class="nav-item">
+                    <a class="nav-link disabled" href="#">Vorlagen importieren</a>
+                </li>
+                {% if user.is_authenticated and user.is_superuser %}
+                    <li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>
+                {% endif %}
+            </ul>
+
+            <ul class="navbar-nav ms-auto align-items-xxl-center">
+                {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <span class="navbar-text me-3 d-flex flex-column align-items-start">
+                            <span class="small">Angemeldet als</span>
+                            <strong>{{ user.username }}</strong>
+                            {% if active_tenant %}
+                                <span class="small">Mandant: {{ active_tenant.name }}</span>
+                            {% elif user.tenant %}
+                                <span class="small">Mandant: {{ user.tenant.name }}</span>
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="nav-item">
+                        <form method="post" action="/accounts/logout/" class="logout-form">
+                            {% csrf_token %}
+                            <button type="submit">Logout</button>
+                        </form>
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+{% if user.is_authenticated and user.is_superuser %}
+<div class="container-fluid content-container mb-3">
+    <form method="post"
+          action="{% url 'core:set_active_tenant' %}"
+          class="tenant-switch-form d-flex flex-wrap align-items-center gap-2">
+        {% csrf_token %}
+
+        <label class="form-label mb-0">Mandant:</label>
+
+        <select name="tenant_id" class="form-select">
+            <option value="">Alle Mandanten</option>
+            {% for tenant in all_tenants %}
+                <option value="{{ tenant.pk }}"
+                    {% if active_tenant and tenant.pk == active_tenant.pk %}selected{% endif %}>
+                    {{ tenant.name }}
+                </option>
+            {% endfor %}
+        </select>
+
+        <button type="submit" class="btn btn-outline-primary btn-sm">
+            Wechseln
+        </button>
+    </form>
+</div>
+{% endif %}
+{% endif %}
+
+<main class="container-fluid content-container pb-4">
+    {% if messages %}
+        <div class="mb-3">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags|default:'info' }} mb-2">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {% block content %}{% endblock %}
+</main>
+
+<div id="table-resize-guide" class="table-resize-guide"></div>
+
+<script>
+    function enableResizableTable(tableId, storageKey) {
+        const table = document.getElementById(tableId);
+        if (!table) return;
+
+        const headers = table.querySelectorAll("th.resizable-column");
+        if (!headers.length) return;
+
+        const guide = document.getElementById("table-resize-guide");
+        let savedWidths = JSON.parse(localStorage.getItem(storageKey) || "[]");
+
+        headers.forEach((header, index) => {
+            if (savedWidths[index]) {
+                header.style.width = savedWidths[index] + "px";
+                header.style.minWidth = savedWidths[index] + "px";
+            }
+
+            if (header.querySelector(".column-resizer")) {
+                return;
+            }
+
+            header.style.position = "relative";
+
+            const resizer = document.createElement("div");
+            resizer.className = "column-resizer";
+            resizer.title = "Spalte breiter oder schmaler ziehen";
+            header.appendChild(resizer);
+
+            let startX = 0;
+            let startWidth = 0;
+
+            resizer.addEventListener("mousedown", function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+
+                startX = e.pageX;
+                startWidth = header.offsetWidth;
+                header.classList.add("resizing");
+
+                if (guide) {
+                    guide.style.left = e.clientX + "px";
+                    guide.style.display = "block";
+                }
+
+                function onMouseMove(e) {
+                    const newWidth = Math.max(90, startWidth + (e.pageX - startX));
+                    header.style.width = newWidth + "px";
+                    header.style.minWidth = newWidth + "px";
+
+                    if (guide) {
+                        guide.style.left = e.clientX + "px";
+                    }
+                }
+
+                function onMouseUp() {
+                    const widths = [...headers].map(h => h.offsetWidth);
+                    localStorage.setItem(storageKey, JSON.stringify(widths));
+
+                    header.classList.remove("resizing");
+
+                    if (guide) {
+                        guide.style.display = "none";
+                    }
+
+                    document.removeEventListener("mousemove", onMouseMove);
+                    document.removeEventListener("mouseup", onMouseUp);
+                }
+
+                document.addEventListener("mousemove", onMouseMove);
+                document.addEventListener("mouseup", onMouseUp);
+            });
+        });
+    }
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

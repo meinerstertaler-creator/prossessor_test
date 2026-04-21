@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.name }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ item.name }}</h1>
+        <p class="text-muted mb-0">{{ item.get_status_display }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'processor_edit' item.pk %}" class="btn btn-primary">Bearbeiten</a>
+        <a href="{% url 'processor_list' %}" class="btn btn-outline-secondary">Zurück zur Liste</a>
+    </div>
+</div>
+
+{% if catalog_update_required %}
+<div class="alert alert-warning">
+    <strong>Aktualisierung verfügbar</strong><br>
+    Im Anbieter-Katalog wurden fehlende oder neuere Standarddokumente erkannt. Bitte prüfen Sie AV-/TOM-Dokumente und übernehmen Sie ggf. die aktuelle Fassung.
+</div>
+{% endif %}
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Anbieter / Einordnung</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Katalogeintrag</dt>
+                    <dd class="col-sm-8">{{ item.catalog_entry|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">AV-Rollen</dt>
+                    <dd class="col-sm-8">
+                        {% if item.provider_roles.all %}
+                            {% for role in item.provider_roles.all %}
+                                <span class="badge text-bg-secondary me-1 mb-1">{{ role.name }}</span>
+                            {% endfor %}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Eigene Rolle</dt>
+                    <dd class="col-sm-8">{{ item.custom_provider_role|default:"—" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Grunddaten</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Name</dt>
+                    <dd class="col-sm-8">{{ item.name }}</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">{{ item.get_status_display }}</dd>
+
+                    <dt class="col-sm-4">Fachbereich</dt>
+                    <dd class="col-sm-8">{{ item.department|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Risikoklasse</dt>
+                    <dd class="col-sm-8">{{ item.get_risk_class_display }}</dd>
+
+                    <dt class="col-sm-4">Leistung</dt>
+                    <dd class="col-sm-8">{{ item.service_description|linebreaks }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Kontakt</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Ansprechpartner</dt>
+                    <dd class="col-sm-8">{{ item.contact_person|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">E-Mail</dt>
+                    <dd class="col-sm-8">{{ item.email|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Telefon</dt>
+                    <dd class="col-sm-8">{{ item.phone|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Adresse</dt>
+                    <dd class="col-sm-8">{{ item.address|default:"—"|linebreaks }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Datenverarbeitung</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Datenkategorien</dt>
+                    <dd class="col-sm-8">{{ item.data_categories|default:"—"|linebreaks }}</dd>
+
+                    <dt class="col-sm-4">Betroffenengruppen</dt>
+                    <dd class="col-sm-8">{{ item.data_subject_groups|default:"—"|linebreaks }}</dd>
+
+                    <dt class="col-sm-4">Serverstandorte</dt>
+                    <dd class="col-sm-8">{{ item.server_locations|default:"—"|linebreaks }}</dd>
+
+                    <dt class="col-sm-4">Drittlandtransfer</dt>
+                    <dd class="col-sm-8">{% if item.third_country_transfer %}Ja{% else %}Nein{% endif %}</dd>
+
+                    <dt class="col-sm-4">Beschreibung Transfer</dt>
+                    <dd class="col-sm-8">{{ item.third_country_description|default:"—"|linebreaks }}</dd>
+
+                    <dt class="col-sm-4">Unterauftragsverarbeiter</dt>
+                    <dd class="col-sm-8">{% if item.subprocessors_used %}Ja{% else %}Nein{% endif %}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">AV-Verträge und Audits</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">AV-Vertrag</dt>
+                    <dd class="col-sm-8">{% if item.av_contract_exists %}Ja{% else %}Nein{% endif %}</dd>
+
+                    <dt class="col-sm-4">Aktuelles AV-Dokument</dt>
+                    <dd class="col-sm-8">
+                        {% if latest_av_contract_document %}
+                            <a href="{% url 'document_download' latest_av_contract_document.pk %}" target="_blank" rel="noopener">
+                                {{ latest_av_contract_document.title }}
+                            </a>
+                            <div class="small text-muted mt-1">
+                                angelegt am {{ latest_av_contract_document.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Weitere AV-Dokumente</dt>
+                    <dd class="col-sm-8">
+                        {% if av_contract_documents %}
+                            <ul class="mb-0 ps-3">
+                                {% for doc in av_contract_documents %}
+                                    <li>
+                                        <a href="{% url 'document_download' doc.pk %}" target="_blank" rel="noopener">
+                                            {{ doc.title }}
+                                        </a>
+                                        {% if doc.version %}
+                                            <span class="text-muted">({{ doc.version }})</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Gültig ab</dt>
+                    <dd class="col-sm-8">{{ item.contract_valid_from|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Gültig bis</dt>
+                    <dd class="col-sm-8">{{ item.contract_valid_until|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Zertifizierungen</dt>
+                    <dd class="col-sm-8">{{ item.certifications|default:"—"|linebreaks }}</dd>
+
+                    <dt class="col-sm-4">Letztes Audit</dt>
+                    <dd class="col-sm-8">{{ item.last_audit_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Nächstes Audit</dt>
+                    <dd class="col-sm-8">{{ item.next_audit_date|default:"—" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">TOM</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">TOM vorhanden</dt>
+                    <dd class="col-sm-8">{% if item.tom_exists %}Ja{% else %}Nein{% endif %}</dd>
+
+                    <dt class="col-sm-4">Aktuelles TOM-Dokument</dt>
+                    <dd class="col-sm-8">
+                        {% if latest_tom_document %}
+                            <a href="{% url 'document_download' latest_tom_document.pk %}" target="_blank" rel="noopener">
+                                {{ latest_tom_document.title }}
+                            </a>
+                            <div class="small text-muted mt-1">
+                                angelegt am {{ latest_tom_document.created_at|date:"d.m.Y H:i" }}
+                            </div>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Weitere TOM-Dokumente</dt>
+                    <dd class="col-sm-8">
+                        {% if tom_documents %}
+                            <ul class="mb-0 ps-3">
+                                {% for doc in tom_documents %}
+                                    <li>
+                                        <a href="{% url 'document_download' doc.pk %}" target="_blank" rel="noopener">
+                                            {{ doc.title }}
+                                        </a>
+                                        {% if doc.version %}
+                                            <span class="text-muted">({{ doc.version }})</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Bemerkungen</h2>
+                <p>{{ item.notes|default:"—"|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

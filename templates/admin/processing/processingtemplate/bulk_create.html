@@ -1,0 +1,85 @@
+{% extends "admin/base_site.html" %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Startseite</a>
+    &rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+    &rsaquo; <a href="{% url 'admin:processing_processingtemplate_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+    &rsaquo; Mehrfach anlegen
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Verfahrensvorlagen mehrfach anlegen</h1>
+
+    <div class="module aligned">
+        <form method="post">
+            {% csrf_token %}
+
+            <fieldset class="module aligned">
+                <h2>Voreinstellungen</h2>
+
+                <div class="form-row">
+                    <div>
+                        <label for="id_default_group">Standardgruppe</label>
+                        <select name="default_group" id="id_default_group">
+                            <option value="general" {% if default_group == "general" %}selected{% endif %}>Allgemein</option>
+                            <option value="legal" {% if default_group == "legal" %}selected{% endif %}>Rechtsanwaltskanzlei</option>
+                            <option value="medical" {% if default_group == "medical" %}selected{% endif %}>Arztpraxis</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label for="id_default_department">Standard-Fachbereich</label>
+                        <input type="text" name="default_department" id="id_default_department" value="{{ default_department }}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div>
+                        <label for="id_apply_defaults">
+                            <input type="checkbox" name="apply_defaults" id="id_apply_defaults" value="1" {% if apply_defaults %}checked{% endif %}>
+                            Standardgruppe und Standard-Fachbereich auf Zeilen ohne Präfix anwenden
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="module aligned">
+                <h2>Eingabe</h2>
+
+                <div class="form-row">
+                    <div>
+                        <label for="id_bulk_templates">Mehrere Vorlagen</label>
+                        <textarea
+                            name="bulk_templates"
+                            id="id_bulk_templates"
+                            rows="18"
+                            style="width: 100%; font-family: monospace;"
+                        >{{ raw_input }}</textarea>
+                        <p class="help">
+                            Erlaubte Formate je Zeile:<br>
+                            1. <strong>Titel</strong><br>
+                            2. <strong>gruppe|Titel</strong><br>
+                            3. <strong>gruppe|Fachbereich|Titel</strong><br><br>
+                            Beispiele:<br>
+                            Empfang / Besucherverwaltung<br>
+                            general|Telefonzentrale / Anrufmanagement<br>
+                            legal|Kanzlei|Gegner- und Beteiligtenverwaltung<br>
+                            medical|Praxis|Patientenempfang
+                        </p>
+                    </div>
+                </div>
+            </fieldset>
+
+            <div class="submit-row">
+                <input type="submit" value="Vorlagen anlegen" class="default">
+                <a href="{% url 'admin:processing_processingtemplate_changelist' %}" class="button cancel-link">Zurück</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,274 @@
+{% extends "base.html" %}
+
+{% block title %}Auditbericht {{ audit.audit_year }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Auditbericht</h1>
+        <p class="text-muted mb-0">{{ audit.title }} / {{ audit.tenant.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'procedure_audit_detail' audit.pk %}" class="btn btn-outline-secondary">Zum Audit</a>
+        <a href="{% url 'procedure_audit_report_list' %}" class="btn btn-outline-secondary">Zurück zur Liste</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Stammdaten</h2>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="small text-muted">Mandant</div>
+                <div class="fw-semibold">{{ audit.tenant.name }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Auditjahr</div>
+                <div class="fw-semibold">{{ audit.audit_year }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Audittyp</div>
+                <div class="fw-semibold">{{ audit.get_audit_type_display }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Status</div>
+                <div class="fw-semibold">{{ audit.get_status_display }}</div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="small text-muted">Auditdatum</div>
+                <div class="fw-semibold">{{ audit.audit_date|default:"—" }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Beginn</div>
+                <div class="fw-semibold">{{ audit.start_date|default:"—" }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Ende</div>
+                <div class="fw-semibold">{{ audit.end_date|default:"—" }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Prüfer</div>
+                <div class="fw-semibold">{{ audit.auditor_name|default:"—" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Auditkontext</h2>
+        <p><strong>Teilnehmer:</strong></p>
+        <div class="mb-3">{{ audit.participants|default:"—"|linebreaks }}</div>
+
+        <p><strong>Zusammenfassung:</strong></p>
+        <div class="mb-3">{{ audit.summary|default:"—"|linebreaks }}</div>
+
+        <p><strong>Schulungsempfehlungen:</strong></p>
+        <div class="mb-0">{{ audit.training_recommendations|default:"—"|linebreaks }}</div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Automatisch erzeugtes Kurzfazit</h2>
+        <p class="mb-0">{{ conclusion }}</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Freitext des Auditors</h2>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                {{ form.auditor_report_note.label_tag }}
+                {{ form.auditor_report_note }}
+            </div>
+            <button type="submit" class="btn btn-primary">
+                Freitext speichern
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Statistische Einordnung</h2>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="small text-muted">Verfahren gesamt</div>
+                <div class="fw-semibold">{{ stats.procedures_total }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Noch nicht geprüft</div>
+                <div class="fw-semibold">{{ stats.procedures_not_checked }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Unverändert</div>
+                <div class="fw-semibold">{{ stats.procedures_unchanged }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Geändert</div>
+                <div class="fw-semibold">{{ stats.procedures_changed }}</div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="small text-muted">Weiterer Prüfbedarf</div>
+                <div class="fw-semibold">{{ stats.procedures_review_required }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Nicht mehr genutzt</div>
+                <div class="fw-semibold">{{ stats.procedures_discontinued }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Neue Verfahren</div>
+                <div class="fw-semibold">{{ stats.new_activities_total }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Neue Verfahren mit Follow-up</div>
+                <div class="fw-semibold">{{ stats.new_activities_follow_up_count }}</div>
+            </div>
+
+            <div class="col-md-3">
+                <div class="small text-muted">Offene Auditmaßnahmen</div>
+                <div class="fw-semibold">{{ stats.open_audit_actions_count }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Offene Maßnahmen Verfahren</div>
+                <div class="fw-semibold">{{ stats.open_procedure_review_actions_count }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Offene Maßnahmen neue Verfahren</div>
+                <div class="fw-semibold">{{ stats.open_new_activities_actions_count }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Abschnitt 1 – Verfahrensprüfung</h2>
+        {% if procedure_items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Verfahren</th>
+                            <th>Prüfstatus</th>
+                            <th>Hinweise</th>
+                            <th>Rechtsbewertung</th>
+                            <th>DSFA</th>
+                            <th>Maßnahme</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in procedure_items %}
+                            <tr>
+                                <td>{{ entry.processing_activity.title }}</td>
+                                <td>{{ entry.get_review_status_display }}</td>
+                                <td>{{ entry.notes|default:"—"|truncatechars:120 }}</td>
+                                <td>{% if entry.legal_review_required %}Ja{% else %}Nein{% endif %}</td>
+                                <td>{% if entry.dpia_review_required %}Ja{% else %}Nein{% endif %}</td>
+                                <td>{% if entry.action_required %}Ja{% else %}Nein{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Keine Verfahren vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Abschnitt 2 – Neue Verfahren</h2>
+        {% if new_activities %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Bezeichnung</th>
+                            <th>Bereich</th>
+                            <th>Ansprechpartner</th>
+                            <th>Bereits produktiv</th>
+                            <th>Follow-up</th>
+                            <th>Hinweise</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in new_activities %}
+                            <tr>
+                                <td>{{ entry.title }}</td>
+                                <td>{{ entry.department_hint|default:"—" }}</td>
+                                <td>{{ entry.contact_person|default:"—" }}</td>
+                                <td>{% if entry.is_already_active %}Ja{% else %}Nein{% endif %}</td>
+                                <td>{% if entry.requires_follow_up %}Ja{% else %}Nein{% endif %}</td>
+                                <td>{{ entry.notes|default:"—"|truncatechars:120 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Keine neuen Verfahren dokumentiert.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Aktuell offene Punkte</h2>
+        {% if current_open_items %}
+            <ul class="mb-0">
+                {% for entry in current_open_items %}
+                    <li>{{ entry.label }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="mb-0">Keine aktuell offenen Punkte.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Maßnahmenübersicht</h2>
+
+        <h3 class="h6 mt-3">Offene Maßnahmen</h3>
+        {% if open_actions %}
+            <ul>
+                {% for action in open_actions %}
+                    <li>{{ action.title }} – {{ action.get_status_display }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Keine offenen Maßnahmen.</p>
+        {% endif %}
+
+        <h3 class="h6 mt-4">Erledigte Maßnahmen</h3>
+        {% if completed_actions %}
+            <ul>
+                {% for action in completed_actions %}
+                    <li>{{ action.title }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>Keine erledigten Maßnahmen.</p>
+        {% endif %}
+
+        <h3 class="h6 mt-4">Gegenstandslose Maßnahmen</h3>
+        {% if irrelevant_actions %}
+            <ul class="mb-0">
+                {% for action in irrelevant_actions %}
+                    <li>{{ action.title }}</li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="mb-0">Keine gegenstandslosen Maßnahmen.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

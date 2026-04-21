@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}{{ item.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ item.title }}</h1>
+        <p class="text-muted mb-0">{{ item.get_status_display }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'action_edit' item.pk %}" class="btn btn-primary">Bearbeiten</a>
+        <a href="{% url 'action_list' %}" class="btn btn-outline-secondary">Zurück zur Liste</a>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Grunddaten</h2>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Titel</dt>
+                    <dd class="col-sm-8">{{ item.title }}</dd>
+
+                    <dt class="col-sm-4">Quelle</dt>
+                    <dd class="col-sm-8">{{ item.source_display }}</dd>
+
+                    <dt class="col-sm-4">Mandant</dt>
+                    <dd class="col-sm-8">{{ item.tenant.name|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Priorität</dt>
+                    <dd class="col-sm-8">{{ item.get_priority_display }}</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">{{ item.get_status_display }}</dd>
+                </dl>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Verantwortung</h2>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Verantwortlich</dt>
+                    <dd class="col-sm-8">{{ item.responsible_person|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Frist</dt>
+                    <dd class="col-sm-8">{{ item.due_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Wiedervorlage</dt>
+                    <dd class="col-sm-8">{{ item.follow_up_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Statusdatum</dt>
+                    <dd class="col-sm-8">{{ item.completion_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Zuletzt bearbeitet</dt>
+                    <dd class="col-sm-8">{{ item.updated_at|date:"d.m.Y H:i" }}</dd>
+                </dl>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Bezüge</h2>
+
+                <dl class="row mb-0">
+
+                    <dt class="col-sm-4">Hauptaudit</dt>
+                    <dd class="col-sm-8">
+                        {% if item.related_procedure_audit %}
+                            {{ item.related_procedure_audit.title }} / {{ item.related_procedure_audit.audit_year }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Spezialaudit</dt>
+                    <dd class="col-sm-8">
+                        {% if item.related_audit %}
+                            {{ item.related_audit.processor.name }} / {{ item.related_audit.audit_year }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Verarbeitung</dt>
+                    <dd class="col-sm-8">
+                        {% if item.related_processing_activity %}
+                            {{ item.related_processing_activity }}
+                        {% elif item.related_procedure_audit %}
+                            Neu gemeldetes, noch nicht angelegtes Verfahren
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Rechtliche Bewertung</dt>
+                    <dd class="col-sm-8">
+                        {{ item.related_legal_assessment|default:"—" }}
+                    </dd>
+
+                </dl>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Kontext</h2>
+                <p class="mb-0">{{ item.context_hint|default:"—"|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+
+                <h2 class="h5">Beschreibung</h2>
+                <p>{{ item.description|default:"—"|linebreaks }}</p>
+
+                <h2 class="h5 mt-4">Wirksamkeitsprüfung</h2>
+                <p>{{ item.effectiveness_review|default:"—"|linebreaks }}</p>
+
+                <h2 class="h5 mt-4">Notizen</h2>
+                <p>{{ item.notes|default:"—"|linebreaks }}</p>
+
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

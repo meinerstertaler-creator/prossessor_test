@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block title %}DSFA{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">DSFA</h1>
+        <p class="text-muted mb-0">{{ processing_activity.title }}</p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'processing_detail' processing_activity.pk %}" class="btn btn-primary">
+            Verfahren
+        </a>
+
+        <a href="{% url 'legal_assessment_edit' processing_activity.pk %}" class="btn btn-outline-dark">
+            Rechtsbewertung
+        </a>
+
+        <a href="{% url 'processing_list' %}" class="btn btn-outline-secondary">
+            Zurück zur Liste
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-3">
+    <div class="col-12">
+        <div class="card border-warning">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">DSFA-Prüfung</h2>
+                        <div class="small text-muted">
+                            Prüfung, ob eine DSFA erforderlich, empfohlen oder nicht geprüft ist.
+                        </div>
+                    </div>
+                    <a href="{% url 'legal_assessment_edit' processing_activity.pk %}" class="btn btn-outline-dark btn-sm">
+                        Zur Rechtsbewertung
+                    </a>
+                </div>
+
+                {% if legal_no_dpia_override %}
+                    <div class="alert alert-success mb-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                            <div>
+                                <strong>Status: DSFA nicht erforderlich</strong><br>
+                                <span class="small">
+                                    {{ legal_record.get_no_dpia_check_required_reason_display }}
+                                </span>
+                                {% if legal_record.no_dpia_check_required_note %}
+                                    <div class="small mt-2">
+                                        {{ legal_record.no_dpia_check_required_note|linebreaksbr }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="badge text-bg-success">
+                                    Rechtsbewertung maßgeblich
+                                </span>
+                            </div>
+                        </div>
+                        <div class="small mt-3">
+                            Die Rechtsbewertung dokumentiert bereits, dass kein DSFA-Check erforderlich ist.
+                            Die DSFA-Prüfung ist daher hier gesperrt.
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="alert alert-{{ dpia_check.recommendation_badge_class }} mb-4">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                            <div>
+                                <strong>Status: {{ dpia_check.recommendation_label }}</strong><br>
+                                <span class="small">{{ dpia_check.recommendation_reason }}</span>
+                            </div>
+                            <div class="d-flex flex-column gap-1">
+                                <span class="badge text-bg-{{ dpia_check.recommendation_badge_class }}">
+                                    {% if dpia_check.completed %}Prüfung abgeschlossen{% else %}Prüfung offen{% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="row g-3 small text-muted mb-4">
+                    <div class="col-12 col-xl-6">
+                        <strong>Standardfall aus Verfahren:</strong><br>
+                        {% if processing_activity.standard_case %}
+                            {{ processing_activity.standard_case.name }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Konkretisierung Standardfall:</strong><br>
+                        {{ processing_activity.standard_case_note|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Zweck:</strong><br>
+                        {{ processing_activity.purpose|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Beschreibung:</strong><br>
+                        {{ processing_activity.description|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Betroffene Personen:</strong><br>
+                        {{ processing_activity.data_subject_categories|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Datenkategorien:</strong><br>
+                        {{ processing_activity.personal_data_categories|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Besondere Kategorien:</strong><br>
+                        {{ processing_activity.special_category_description|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Systeme:</strong><br>
+                        {{ processing_activity.systems_used|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Empfänger:</strong><br>
+                        {{ processing_activity.recipients|default:"—"|linebreaksbr }}
+                    </div>
+                    <div class="col-12 col-xl-6">
+                        <strong>Drittlandtransfer:</strong><br>
+                        {{ processing_activity.third_country_description|default:"—"|linebreaksbr }}
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <fieldset {% if legal_no_dpia_override %}disabled{% endif %}>
+                        <div class="row g-3">
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">{{ check_form.mode.label }}</label>
+                                {{ check_form.mode }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">{{ check_form.must_list_case.label }}</label>
+                                {{ check_form.must_list_case }}
+                            </div>
+
+                            <div class="col-12 col-md-4">
+                                <label class="form-label">{{ check_form.risk_level.label }}</label>
+                                {{ check_form.risk_level }}
+                            </div>
+
+                            <div class="col-12">
+                                <div class="alert alert-light small mb-0">
+                                    <strong>Hinweis:</strong>
+                                    Der Standardfall wird aus dem Verfahren übernommen und hier nur angezeigt.
+                                    Bei Standardfällen mit mittlerem oder hohem Risikohinweis soll regelmäßig mindestens
+                                    „DSFA empfohlen“ erscheinen, solange keine gegenteilige dokumentierte Rechtsbewertung vorliegt.
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">{{ check_form.reasoning.label }}</label>
+                                {{ check_form.reasoning }}
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label">{{ check_form.open_points.label }}</label>
+                                {{ check_form.open_points }}
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-check">
+                                    {{ check_form.completed }}
+                                    <label class="form-check-label">
+                                        {{ check_form.completed.label }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    {% if not legal_no_dpia_override %}
+                        <div class="mt-3 d-flex flex-wrap gap-2">
+                            <button type="submit" name="action" value="generate_check_recommendation" class="btn btn-outline-dark">
+                                Empfehlung erzeugen
+                            </button>
+
+                            <button type="submit" name="action" value="save_check" class="btn btn-outline-primary">
+                                DSFA-Prüfung speichern
+                            </button>
+                        </div>
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="dpia-main-form" method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="save_dpia">
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">DSFA-Durchführung</h2>
+                            <div class="small text-muted">
+                                Dokumentation der eigentlichen DSFA, wenn sie erforderlich oder empfohlen ist.
+                            </div>
+                        </div>
+                        <span class="badge text-bg-{% if dpia.approved %}success{% else %}secondary{% endif %}">
+                            {% if dpia.approved %}freigegeben{% else %}nicht freigegeben{% endif %}
+                        </span>
+                    </div>
+
+                    {% if legal_no_dpia_override %}
+                        <div class="alert alert-light small mb-3">
+                            Die DSFA-Durchführung kann hier weiterhin dokumentiert werden.
+                            Solange jedoch in der Rechtsbewertung „DSFA nicht erforderlich“ dokumentiert ist,
+                            werden aus diesem Bereich keine DSFA-Maßnahmen erzeugt.
+                        </div>
+                    {% endif %}
+
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">{{ dpia_form.description.label }}</label>
+                            {{ dpia_form.description }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">{{ dpia_form.necessity_assessment.label }}</label>
+                            {{ dpia_form.necessity_assessment }}
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label">{{ dpia_form.result_summary.label }}</label>
+                            {{ dpia_form.result_summary }}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label">{{ dpia_form.residual_risk.label }}</label>
+                            {{ dpia_form.residual_risk }}
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <div class="form-check mt-md-4 pt-md-2">
+                                {{ dpia_form.approved }}
+                                <label class="form-check-label">
+                                    {{ dpia_form.approved.label }}
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="row g-4 mt-3">
+    <div class="col-12 col-xl-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Risiko hinzufügen</h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_risk">
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ risk_form.title.label }}</label>
+                        {{ risk_form.title }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ risk_form.description.label }}</label>
+                        {{ risk_form.description }}
+                    </div>
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">{{ risk_form.probability.label }}</label>
+                            {{ risk_form.probability }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">{{ risk_form.impact.label }}</label>
+                            {{ risk_form.impact }}
+                        </div>
+                    </div>
+
+                    <div class="mt-3 mb-3">
+                        <label class="form-label">{{ risk_form.mitigation_measures.label }}</label>
+                        {{ risk_form.mitigation_measures }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ risk_form.residual_risk.label }}</label>
+                        {{ risk_form.residual_risk }}
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary">
+                        Risiko hinzufügen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Maßnahme hinzufügen</h2>
+
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_measure">
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ measure_form.title.label }}</label>
+                        {{ measure_form.title }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ measure_form.description.label }}</label>
+                        {{ measure_form.description }}
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ measure_form.implemented }}
+                            <label class="form-check-label">
+                                {{ measure_form.implemented.label }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ measure_form.responsible_person.label }}</label>
+                        {{ measure_form.responsible_person }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ measure_form.due_date.label }}</label>
+                        {{ measure_form.due_date }}
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary">
+                        Maßnahme hinzufügen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mt-1">
+    <div class="col-12 col-xl-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Erfasste Risiken</h2>
+
+                {% if risks %}
+                    {% for risk in risks %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ risk.title }}</strong>
+                                <form method="post" action="{% url 'dpia:dpia_delete_risk' risk.pk %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger">Löschen</button>
+                                </form>
+                            </div>
+
+                            <div class="mt-2 text-break">{{ risk.description|linebreaks }}</div>
+
+                            <div class="small text-muted mt-2">
+                                {{ risk.get_probability_display }} | {{ risk.get_impact_display }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Keine Risiken vorhanden.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Erfasste Maßnahmen</h2>
+
+                {% if measures %}
+                    {% for measure in measures %}
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between">
+                                <strong>{{ measure.title }}</strong>
+                                <form method="post" action="{% url 'dpia:dpia_delete_measure' measure.pk %}">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger">Löschen</button>
+                                </form>
+                            </div>
+
+                            <div class="mt-2 text-break">{{ measure.description|linebreaks }}</div>
+
+                            <div class="small mt-2">
+                                Verantwortlich: {{ measure.responsible_person|default:"—" }}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>Keine Maßnahmen vorhanden.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 d-flex flex-wrap gap-2">
+    <button type="submit"
+            form="dpia-main-form"
+            name="action"
+            value="save_dpia"
+            class="btn btn-primary">
+        Speichern
+    </button>
+
+    <button type="submit"
+            form="dpia-main-form"
+            name="action"
+            value="save_dpia_return"
+            class="btn btn-success">
+        Speichern und zurück
+    </button>
+
+    <a href="{% url 'processing_detail' processing_activity.pk %}" class="btn btn-outline-secondary">
+        Abbrechen
+    </a>
+</div>
+
+{% endblock %}

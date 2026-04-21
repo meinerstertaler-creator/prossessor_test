@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Verfahrensprüfung{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Verfahrensprüfung</h1>
+        <p class="text-muted mb-0">{{ audit.title }} / {{ audit.tenant.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'procedure_audit_detail' audit.pk %}" class="btn btn-outline-secondary">Zurück zum Audit</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Zwischenstand Verfahrensprüfung</h2>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="small text-muted">Verfahren gesamt</div>
+                <div class="fw-semibold">{{ stats.procedures_total }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Noch nicht geprüft</div>
+                <div class="fw-semibold">{{ stats.procedures_not_checked }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Geändert</div>
+                <div class="fw-semibold">{{ stats.procedures_changed }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="small text-muted">Weiterer Prüfbedarf</div>
+                <div class="fw-semibold">{{ stats.procedures_review_required }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if item_forms %}
+        {% for item in item_forms %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h5 mb-1">{{ item.audit_item.processing_activity.title }}</h2>
+                    <p class="text-muted mb-3">
+                        Bitte dokumentieren, ob das Verfahren unverändert fortbesteht, Änderungen vorliegen oder eine neue Prüfung erforderlich ist.
+                    </p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="{{ item.form.review_status.id_for_label }}">Prüfstatus</label>
+                            {{ item.form.review_status }}
+                            <div class="text-danger small">{{ item.form.review_status.errors }}</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label" for="{{ item.form.notes.id_for_label }}">Hinweise / Änderungen</label>
+                            {{ item.form.notes }}
+                            <div class="text-danger small">{{ item.form.notes.errors }}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.legal_review_required }}
+                                <label class="form-check-label" for="{{ item.form.legal_review_required.id_for_label }}">
+                                    Rechtsbewertung prüfen
+                                </label>
+                            </div>
+                            <div class="text-danger small">{{ item.form.legal_review_required.errors }}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.dpia_review_required }}
+                                <label class="form-check-label" for="{{ item.form.dpia_review_required.id_for_label }}">
+                                    DSFA prüfen
+                                </label>
+                            </div>
+                            <div class="text-danger small">{{ item.form.dpia_review_required.errors }}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.action_required }}
+                                <label class="form-check-label" for="{{ item.form.action_required.id_for_label }}">
+                                    Maßnahme erforderlich
+                                </label>
+                            </div>
+                            <div class="text-danger small">{{ item.form.action_required.errors }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">Verfahrensprüfung speichern</button>
+            <button type="submit"
+                    formaction="{% url 'procedure_audit_items_complete' audit.pk %}"
+                    formmethod="post"
+                    class="btn btn-success">
+                Verfahrensprüfung vorläufig abschließen
+            </button>
+            <a href="{% url 'procedure_audit_detail' audit.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            Für den ausgewählten Mandanten sind derzeit keine Verfahren vorhanden.
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+            <form method="post" action="{% url 'procedure_audit_items_complete' audit.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    Verfahrensprüfung vorläufig abschließen
+                </button>
+            </form>
+
+            <a href="{% url 'procedure_audit_detail' audit.pk %}" class="btn btn-outline-secondary">Zurück zum Audit</a>
+        </div>
+    {% endif %}
+</form>
+{% endblock %}

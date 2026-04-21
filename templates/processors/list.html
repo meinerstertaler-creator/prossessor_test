@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Auftragsverarbeiter{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Auftragsverarbeiter</h1>
+    <a href="{% url 'processor_create' %}" class="btn btn-primary">Neuer Auftragsverarbeiter</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Leistung</th>
+                            <th>Status</th>
+                            <th>Risikoklasse</th>
+                            <th>AV-Vertrag</th>
+                            <th>Nächster Audit</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>{{ item.name }}</td>
+                                <td>{{ item.service_description|truncatechars:60 }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>{{ item.get_risk_class_display }}</td>
+                                <td>{% if item.av_contract_exists %}Ja{% else %}Nein{% endif %}</td>
+                                <td>{{ item.next_audit_date|default:"—" }}</td>
+                                <td>
+                                    <a href="{% url 'processor_detail' item.pk %}" class="btn btn-sm btn-outline-primary">Öffnen</a>
+                                    <a href="{% url 'processor_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">Bearbeiten</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Es sind noch keine Auftragsverarbeiter vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

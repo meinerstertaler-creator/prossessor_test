@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Standardverfahren übernehmen{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Standardverfahren übernehmen</h1>
+        <p class="text-muted mb-0">Mandant: {{ tenant.name }}</p>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2">
+        <a href="{% url 'processing_create' %}" class="btn btn-outline-primary">Neues Verfahren</a>
+        <a href="{% url 'processing_list' %}" class="btn btn-outline-secondary">Zurück zur Liste</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <p class="mb-0">
+            Wähle die Verfahrensvorlagen aus, die für diesen Mandanten als Verfahren angelegt werden sollen.
+            Bereits vorhandene Verfahren sind markiert und sollten in der Regel nicht erneut ausgewählt werden.
+        </p>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleGroup('general', true)">
+            Alle allgemeinen auswählen
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleGroup('general', false)">
+            Allgemeine abwählen
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleGroup('special', true)">
+            Alle speziellen auswählen
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleGroup('special', false)">
+            Spezielle abwählen
+        </button>
+    </div>
+
+    {% if general_assignments %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Allgemein</h2>
+
+                <div class="row g-3">
+                    {% for assignment in general_assignments %}
+                        <div class="col-12 col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input group-general"
+                                        type="checkbox"
+                                        name="template_ids"
+                                        value="{{ assignment.template.id }}"
+                                        id="template_{{ assignment.template.id }}"
+                                        {% if not assignment.already_exists %}checked{% endif %}
+                                    >
+                                    <label class="form-check-label fw-semibold" for="template_{{ assignment.template.id }}">
+                                        {{ assignment.template.title }}
+                                    </label>
+                                </div>
+
+                                <div class="small text-muted mt-2">
+                                    Gruppe: {{ assignment.template.get_template_group_display }}
+                                </div>
+
+                                {% if assignment.template.department %}
+                                    <div class="small text-muted">
+                                        Fachbereich: {{ assignment.template.department }}
+                                    </div>
+                                {% endif %}
+
+                                {% if assignment.already_exists %}
+                                    <div class="mt-2">
+                                        <span class="badge text-bg-warning">Bereits vorhanden oder schon übernommen</span>
+                                    </div>
+                                {% else %}
+                                    <div class="mt-2">
+                                        <span class="badge text-bg-secondary">Noch nicht angelegt</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if special_assignments %}
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Spezial</h2>
+
+                <div class="row g-3">
+                    {% for assignment in special_assignments %}
+                        <div class="col-12 col-lg-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input group-special"
+                                        type="checkbox"
+                                        name="template_ids"
+                                        value="{{ assignment.template.id }}"
+                                        id="template_{{ assignment.template.id }}"
+                                        {% if not assignment.already_exists %}checked{% endif %}
+                                    >
+                                    <label class="form-check-label fw-semibold" for="template_{{ assignment.template.id }}">
+                                        {{ assignment.template.title }}
+                                    </label>
+                                </div>
+
+                                <div class="small text-muted mt-2">
+                                    Gruppe: {{ assignment.template.get_template_group_display }}
+                                </div>
+
+                                {% if assignment.template.department %}
+                                    <div class="small text-muted">
+                                        Fachbereich: {{ assignment.template.department }}
+                                    </div>
+                                {% endif %}
+
+                                {% if assignment.already_exists %}
+                                    <div class="mt-2">
+                                        <span class="badge text-bg-warning">Bereits vorhanden oder schon übernommen</span>
+                                    </div>
+                                {% else %}
+                                    <div class="mt-2">
+                                        <span class="badge text-bg-secondary">Noch nicht angelegt</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if not general_assignments and not special_assignments %}
+        <div class="alert alert-warning">
+            Für diesen Mandanten sind noch keine aktiven Verfahrensvorlagen zugeordnet.
+        </div>
+    {% else %}
+        <div class="d-flex flex-wrap gap-2">
+            <button type="submit" class="btn btn-primary">
+                Auswahl importieren
+            </button>
+            <a href="{% url 'processing_list' %}" class="btn btn-outline-secondary">
+                Abbrechen
+            </a>
+        </div>
+    {% endif %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleGroup(groupName, checked) {
+        const checkboxes = document.querySelectorAll(".group-" + groupName);
+        checkboxes.forEach(function (checkbox) {
+            checkbox.checked = checked;
+        });
+    }
+</script>
+{% endblock %}

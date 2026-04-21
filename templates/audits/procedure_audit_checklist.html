@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Allgemeine Audit-Checkliste{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Allgemeine Audit-Checkliste</h1>
+        <p class="text-muted mb-0">{{ audit.title }} / {{ audit.tenant.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'procedure_audit_detail' audit.pk %}" class="btn btn-outline-secondary">Zurück zum Audit</a>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if response_items %}
+        {% for item in response_items %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h6 mb-2">{{ item.question.get_category_display }}</h2>
+                    <p class="mb-3">{{ item.question.question_text }}</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" for="{{ item.form.rating.id_for_label }}">Bewertung</label>
+                            {{ item.form.rating }}
+                            <div class="text-danger small">{{ item.form.rating.errors }}</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label" for="{{ item.form.comment.id_for_label }}">Kommentar</label>
+                            {{ item.form.comment }}
+                            <div class="text-danger small">{{ item.form.comment.errors }}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.evidence_available }}
+                                <label class="form-check-label" for="{{ item.form.evidence_available.id_for_label }}">
+                                    Nachweis vorhanden
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.action_required }}
+                                <label class="form-check-label" for="{{ item.form.action_required.id_for_label }}">
+                                    Maßnahme erforderlich
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Checkliste speichern</button>
+            <a href="{% url 'procedure_audit_detail' audit.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+        </div>
+    {% else %}
+        <div class="alert alert-warning">
+            Es sind keine aktiven Auditfragen vorhanden.
+        </div>
+    {% endif %}
+</form>
+
+{% if response_items %}
+    <div class="mt-4">
+        <form method="post" action="{% url 'procedure_audit_checklist_complete' audit.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-success">
+                Abschnitt „Allgemeine Audit-Checkliste“ vorläufig abschließen
+            </button>
+        </form>
+    </div>
+{% endif %}
+{% endblock %}

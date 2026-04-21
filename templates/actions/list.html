@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Maßnahmen{% endblock %}
+
+{% block extra_head %}
+<style>
+    .actions-table-wrapper {
+        overflow-x: auto;
+        width: 100%;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .actions-table {
+        min-width: 1500px;
+    }
+
+    .col-title {
+        min-width: 260px;
+    }
+
+    .col-source {
+        min-width: 320px;
+    }
+
+    .col-priority {
+        min-width: 110px;
+    }
+
+    .col-status {
+        min-width: 140px;
+    }
+
+    .col-actions {
+        min-width: 180px;
+    }
+
+    .col-responsible {
+        min-width: 160px;
+    }
+
+    .col-followup {
+        min-width: 120px;
+    }
+
+    .col-updated {
+        min-width: 155px;
+    }
+
+    .floating-scroll-left {
+        position: fixed;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2000;
+    }
+
+    .floating-scroll-right {
+        position: fixed;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2000;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+    <h1 class="h3 mb-0">Maßnahmen</h1>
+
+    <div class="d-flex flex-wrap align-items-center gap-2">
+        <form method="get" class="mb-0">
+            <input type="hidden" name="sort" value="{{ current_sort }}">
+
+            {% if show_history %}
+                <button type="submit"
+                        class="btn btn-outline-secondary btn-sm">
+                    Nur aktive Maßnahmen
+                </button>
+            {% else %}
+                <input type="hidden" name="show_history" value="1">
+                <button type="submit"
+                        class="btn btn-outline-dark btn-sm">
+                    Historische Maßnahmen einblenden
+                </button>
+            {% endif %}
+        </form>
+
+        <form method="get" class="d-flex flex-wrap align-items-center gap-2 mb-0">
+            {% if show_history %}
+                <input type="hidden" name="show_history" value="1">
+            {% endif %}
+
+            <label for="sort" class="form-label mb-0">Sortierung</label>
+            <select
+                name="sort"
+                id="sort"
+                class="form-select form-select-sm"
+                style="width: auto;"
+                onchange="this.form.submit()"
+            >
+                <option value="status_open_priority" {% if current_sort == "status_open_priority" %}selected{% endif %}>
+                    Offen zuerst / Priorität
+                </option>
+                <option value="created_desc" {% if current_sort == "created_desc" %}selected{% endif %}>
+                    Neueste zuerst
+                </option>
+                <option value="created_asc" {% if current_sort == "created_asc" %}selected{% endif %}>
+                    Älteste zuerst
+                </option>
+                <option value="updated_desc" {% if current_sort == "updated_desc" %}selected{% endif %}>
+                    Zuletzt geändert zuerst
+                </option>
+                <option value="updated_asc" {% if current_sort == "updated_asc" %}selected{% endif %}>
+                    Am längsten nicht geändert
+                </option>
+                <option value="priority" {% if current_sort == "priority" %}selected{% endif %}>
+                    Wichtigkeit
+                </option>
+            </select>
+        </form>
+
+        <a href="{% url 'action_create' %}" class="btn btn-primary">Neue Maßnahme</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        {% if items %}
+            <div id="actions-table-scroll" class="actions-table-wrapper">
+                <table id="actions-table"
+                       class="table table-striped table-hover align-middle mb-0 actions-table"
+                       style="table-layout: fixed;">
+                    <thead>
+                        <tr>
+                            <th class="col-title resizable-column">Titel</th>
+                            <th class="col-source resizable-column">Quelle / Zuordnung</th>
+                            <th class="col-priority text-nowrap resizable-column">Priorität</th>
+                            <th class="col-status text-nowrap resizable-column">Status</th>
+                            <th class="col-actions text-nowrap resizable-column">Aktionen</th>
+                            <th class="col-responsible resizable-column">Verantwortlich</th>
+                            <th class="col-followup text-nowrap resizable-column">Wiedervorlage</th>
+                            <th class="col-updated text-nowrap resizable-column">Letzte Bearbeitung</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>
+                                    <div class="col-title">
+                                        <div>{{ item.title }}</div>
+
+                                        {% if item.belongs_to_archived_processing %}
+                                            <div class="small text-muted mt-1">
+                                                Zugehöriges Verfahren ist archiviert
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="col-source">
+                                        <div>{{ item.source_display }}</div>
+                                        {% if item.context_hint %}
+                                            <div class="small text-muted mt-1">{{ item.context_hint }}</div>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td class="text-nowrap">
+                                    {{ item.get_priority_display }}
+                                </td>
+
+                                <td class="text-nowrap">
+                                    <span class="badge text-bg-{{ item.status_badge_class }}">
+                                        {{ item.get_status_display }}
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <div class="d-flex flex-wrap gap-2 col-actions">
+                                        {% if item.resolved_target_area == "manual" or not item.related_processing_activity and not item.related_legal_assessment and not item.related_audit and not item.related_procedure_audit %}
+                                            <a href="{% url 'action_detail' item.pk %}" class="btn btn-sm btn-outline-primary">
+                                                Öffnen
+                                            </a>
+                                            <a href="{% url 'action_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">
+                                                Bearbeiten
+                                            </a>
+                                        {% else %}
+                                            <a href="{% url 'action_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">
+                                                {{ item.action_button_label }}
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="col-responsible">
+                                        {{ item.responsible_person|default:"—" }}
+                                    </div>
+                                </td>
+
+                                <td class="text-nowrap">
+                                    {{ item.follow_up_date|default:"—" }}
+                                </td>
+
+                                <td class="text-nowrap">
+                                    {{ item.updated_at|date:"d.m.Y H:i" }}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="p-3 small text-muted">
+                Reihenfolge: offene Maßnahmen zuerst, danach erledigte, danach gegenstandslose Maßnahmen.
+            </div>
+        {% else %}
+            <div class="p-3">
+                <p class="mb-0">Es sind noch keine Maßnahmen vorhanden.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="floating-scroll-left">
+    <button type="button"
+            class="btn btn-dark btn-sm shadow"
+            onclick="scrollActionsTable(-400)">
+        ←
+    </button>
+</div>
+
+<div class="floating-scroll-right">
+    <button type="button"
+            class="btn btn-dark btn-sm shadow"
+            onclick="scrollActionsTable(400)">
+        →
+    </button>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function scrollActionsTable(amount) {
+        const container = document.getElementById("actions-table-scroll");
+        if (container) {
+            container.scrollBy({
+                left: amount,
+                behavior: "smooth"
+            });
+        }
+    }
+
+    function applySavedColumnWidths(tableId, storageKey) {
+        const table = document.getElementById(tableId);
+        if (!table) {
+            return;
+        }
+
+        const headers = table.querySelectorAll("thead th.resizable-column");
+        const savedWidths = localStorage.getItem(storageKey);
+
+        if (!savedWidths) {
+            return;
+        }
+
+        try {
+            const widths = JSON.parse(savedWidths);
+            headers.forEach((header, index) => {
+                if (widths[index]) {
+                    header.style.width = widths[index];
+                }
+            });
+        } catch (error) {
+            console.warn("Gespeicherte Spaltenbreiten konnten nicht geladen werden.", error);
+        }
+    }
+
+    function saveColumnWidths(tableId, storageKey) {
+        const table = document.getElementById(tableId);
+        if (!table) {
+            return;
+        }
+
+        const headers = table.querySelectorAll("thead th.resizable-column");
+        const widths = Array.from(headers).map((header) => `${header.offsetWidth}px`);
+        localStorage.setItem(storageKey, JSON.stringify(widths));
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        applySavedColumnWidths("actions-table", "actions-table-widths");
+        enableResizableTable("actions-table", "actions-table-widths");
+
+        const table = document.getElementById("actions-table");
+        if (table) {
+            table.addEventListener("mouseup", function () {
+                saveColumnWidths("actions-table", "actions-table-widths");
+            });
+
+            table.addEventListener("mouseleave", function () {
+                saveColumnWidths("actions-table", "actions-table-widths");
+            });
+        }
+    });
+</script>
+{% endblock %}

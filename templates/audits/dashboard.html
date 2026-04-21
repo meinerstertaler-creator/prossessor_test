@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Audits{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Audits</h1>
+        <p class="text-muted mb-0">Einheitlicher Einstieg für Hauptaudits und Spezialaudits.</p>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5">Neues Audit anlegen</h2>
+        <p class="text-muted">
+            Bitte zuerst die Art des Audits auswählen. Danach wirst du in das passende Formular weitergeleitet.
+        </p>
+
+        <form method="post" class="row g-3 align-items-end">
+            {% csrf_token %}
+            <div class="col-md-8">
+                <label class="form-label">Art des Audits</label>
+                {{ form.audit_kind }}
+                <div class="text-danger small">{{ form.audit_kind.errors }}</div>
+            </div>
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary w-100">Audit anlegen</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0">Verfahrensorientierte Audits</h2>
+                    <a href="{% url 'procedure_audit_list' %}" class="btn btn-sm btn-outline-primary">Zur Liste</a>
+                </div>
+
+                <p class="text-muted">
+                    Hauptaudits auf Mandanten- und Verfahrensbasis.
+                </p>
+
+                {% if procedure_items %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in procedure_items %}
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                    <div>
+                                        <div class="fw-semibold">{{ item.title }}</div>
+                                        <div class="text-muted small">
+                                            {{ item.tenant.name }} · {{ item.audit_year }} · {{ item.get_audit_type_display }}
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'procedure_audit_detail' item.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        Öffnen
+                                    </a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Noch keine verfahrensorientierten Audits vorhanden.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0">Spezialaudits Auftragsverarbeiter</h2>
+                    <a href="{% url 'audit_list' %}" class="btn btn-sm btn-outline-primary">Zur Liste</a>
+                </div>
+
+                <p class="text-muted">
+                    Nebenprojekt für spezialisierte Audits zu Auftragsverarbeitern.
+                </p>
+
+                {% if special_items %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in special_items %}
+                            <li class="list-group-item px-0">
+                                <div class="d-flex justify-content-between align-items-center gap-3">
+                                    <div>
+                                        <div class="fw-semibold">{{ item.processor.name }}</div>
+                                        <div class="text-muted small">
+                                            {{ item.audit_year }} · {{ item.get_audit_type_display }}
+                                        </div>
+                                    </div>
+                                    <a href="{% url 'audit_detail' item.pk %}" class="btn btn-sm btn-outline-secondary">
+                                        Öffnen
+                                    </a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Noch keine Spezialaudits vorhanden.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

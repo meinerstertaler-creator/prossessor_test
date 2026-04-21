@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">{{ page_title }}</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    Bitte prüfe die markierten Felder.
+                </div>
+            {% endif %}
+
+            <h2 class="h5">Audit-Stammdaten</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Auftragsverarbeiter</label>
+                    {{ form.processor }}
+                    <div class="text-danger small">{{ form.processor.errors }}</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Auditjahr</label>
+                    {{ form.audit_year }}
+                    <div class="text-danger small">{{ form.audit_year.errors }}</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Audittyp</label>
+                    {{ form.audit_type }}
+                    <div class="text-danger small">{{ form.audit_type.errors }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Status</label>
+                    {{ form.status }}
+                    <div class="text-danger small">{{ form.status.errors }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Startdatum</label>
+                    {{ form.start_date }}
+                    <div class="text-danger small">{{ form.start_date.errors }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fälligkeitsdatum</label>
+                    {{ form.due_date }}
+                    <div class="text-danger small">{{ form.due_date.errors }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Abschlussdatum</label>
+                    {{ form.completion_date }}
+                    <div class="text-danger small">{{ form.completion_date.errors }}</div>
+                </div>
+
+                <div class="col-md-8">
+                    <label class="form-label">Prüfer</label>
+                    {{ form.auditor_name }}
+                    <div class="text-danger small">{{ form.auditor_name.errors }}</div>
+                </div>
+            </div>
+
+            <h2 class="h5">Bewertung</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label">Gesamtergebnis</label>
+                    {{ form.overall_result }}
+                    <div class="text-danger small">{{ form.overall_result.errors }}</div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        {{ form.follow_up_required }}
+                        <label class="form-check-label">
+                            Folgeprüfung erforderlich
+                        </label>
+                    </div>
+                    <div class="text-danger small">{{ form.follow_up_required.errors }}</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Nächste Prüfung</label>
+                    {{ form.next_review_date }}
+                    <div class="text-danger small">{{ form.next_review_date.errors }}</div>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Zusammenfassung</label>
+                    {{ form.summary }}
+                    <div class="text-danger small">{{ form.summary.errors }}</div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{ submit_label }}
+                </button>
+                <a href="{% url 'audit_list' %}" class="btn btn-outline-secondary">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

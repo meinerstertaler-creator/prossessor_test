@@ -1,0 +1,9 @@
+<h1>Rechtsbewertung</h1>
+
+<p>Verarbeitung: {{ processing_activity.title }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Speichern</button>
+</form>

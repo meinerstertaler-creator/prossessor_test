@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}Audit {{ audit.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-1">{{ audit.title }}</h1>
+            <div class="text-muted">
+                Jahresaudit {{ audit.audit_year }} · {{ audit.get_audit_type_display }}
+            </div>
+        </div>
+
+        <div>
+            <a href="{% url 'procedure_audit_edit' audit.pk %}" class="btn btn-outline-secondary">
+                Audit bearbeiten
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <div class="fw-semibold mb-2">1. Verfahren</div>
+
+                <div class="small text-muted mb-3">
+                    Bestehende Verfahren prüfen und Maßnahmen ableiten
+                </div>
+
+                <a href="{% url 'procedure_audit_items' audit.pk %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                    Verfahren öffnen
+                </a>
+
+                {% if audit.procedure_review_completed_at %}
+                    <div class="small text-success">
+                        Vorläufig abgeschlossen
+                    </div>
+                {% endif %}
+
+                {% if audit.procedure_review_final_completed_at %}
+                    <div class="small text-success">
+                        Endgültig abgeschlossen
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <div class="fw-semibold mb-2">2. Neue Verfahren</div>
+
+                <div class="small text-muted mb-3">
+                    Neue Prozesse erfassen und überführen
+                </div>
+
+                <a href="{% url 'procedure_audit_new_activities' audit.pk %}" class="btn btn-outline-primary btn-sm w-100 mb-2">
+                    Neue Verfahren öffnen
+                </a>
+
+                {% if audit.new_activities_review_completed_at %}
+                    <div class="small text-success">
+                        Vorläufig abgeschlossen
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <div class="fw-semibold mb-2">3. Audit-Checkliste</div>
+
+                <div class="small text-muted mb-3">
+                    Fragen, Gesetzesänderungen, Hinweise, Zukunftsthemen
+                </div>
+
+                <a href="{% url 'procedure_audit_checklist' audit.pk %}" class="btn btn-outline-primary btn-sm w-100">
+                    Checkliste öffnen
+                </a>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="border rounded p-3 h-100">
+                <div class="fw-semibold mb-2">4. Abschluss</div>
+
+                <div class="small text-muted mb-3">
+                    Auditstatus und Abschluss
+                </div>
+
+                {% if not audit.preliminary_completed_at %}
+                    <form method="post" action="{% url 'procedure_audit_preliminary_complete' audit.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-warning btn-sm w-100 mb-2">
+                            Vorläufig abschließen
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="small text-success mb-2">
+                        Vorläufig abgeschlossen
+                    </div>
+                {% endif %}
+
+                {% if not audit.final_completed_at %}
+                    <form method="post" action="{% url 'procedure_audit_final_complete' audit.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-outline-success btn-sm w-100">
+                            Jahresaudit beenden
+                        </button>
+                    </form>
+                {% else %}
+                    <div class="small text-success">
+                        Jahresaudit beendet
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="border rounded p-3">
+        <h2 class="h5 mb-3">Auditstatus</h2>
+
+        <div class="row">
+            <div class="col-md-4">
+                <strong>Status:</strong> {{ audit.get_status_display }}
+            </div>
+            <div class="col-md-4">
+                <strong>Auditor:</strong> {{ audit.auditor_name|default:"—" }}
+            </div>
+            <div class="col-md-4">
+                <strong>Mandant:</strong> {{ audit.tenant }}
+            </div>
+        </div>
+
+        {% if audit.summary %}
+            <hr>
+            <div>
+                <strong>Zusammenfassung:</strong><br>
+                {{ audit.summary|linebreaks }}
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

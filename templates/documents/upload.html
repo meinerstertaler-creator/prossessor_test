@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Dokument hochladen{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Dokument hochladen</h1>
+        <p class="text-muted mb-0">Neues Dokument mit Ordner und Labels anlegen</p>
+    </div>
+
+    <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">
+        Zurück zur Liste
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-12 col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="id_title" class="form-label">Titel</label>
+                            <input type="text" id="id_title" name="title" class="form-control" required>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="id_document_type" class="form-label">Dokumenttyp</label>
+                            <select id="id_document_type" name="document_type" class="form-select" required>
+                                {% for value, label in document_types %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="id_version" class="form-label">Version</label>
+                            <input type="text" id="id_version" name="version" class="form-control">
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_file" class="form-label">Datei</label>
+                            <input type="file" id="id_file" name="file" class="form-control" required>
+                        </div>
+
+                        {% if request.user.is_superuser %}
+                        <div class="col-md-6">
+                            <label for="id_tenant" class="form-label">Mandant</label>
+                            <select id="id_tenant" name="tenant" class="form-select">
+                                <option value="">-- Global / keiner --</option>
+                                {% for t in tenants %}
+                                    <option value="{{ t.pk }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-md-6">
+                            <label for="id_folder" class="form-label">Ordner</label>
+                            <select id="id_folder" name="folder" class="form-select">
+                                <option value="">-- kein Ordner --</option>
+                                {% for folder in folders %}
+                                    <option value="{{ folder.pk }}">{{ folder }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_labels" class="form-label">Labels</label>
+                            <select id="id_labels" name="labels" class="form-select" multiple size="6">
+                                {% for label in labels %}
+                                    <option value="{{ label.pk }}">{{ label.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Mehrfachauswahl möglich. Mit Strg oder Cmd können mehrere Labels ausgewählt werden.
+                            </div>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_description" class="form-label">Beschreibung</label>
+                            <textarea id="id_description" name="description" class="form-control" rows="4">N/A</textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Hochladen</button>
+                        <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-4">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Neuen Ordner anlegen</h2>
+
+                <form method="post" action="{% url 'document_folder_create' %}">
+                    {% csrf_token %}
+
+                    {% if request.user.is_superuser %}
+                        <div class="mb-3">
+                            <label for="id_folder_tenant" class="form-label">Mandant</label>
+                            <select id="id_folder_tenant" name="tenant" class="form-select">
+                                <option value="">-- aktiven Mandanten verwenden --</option>
+                                {% for t in tenants %}
+                                    <option value="{{ t.pk }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_folder_name" class="form-label">Ordnername</label>
+                        <input type="text" id="id_folder_name" name="folder_name" class="form-control" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_folder_parent" class="form-label">Übergeordneter Ordner</label>
+                        <select id="id_folder_parent" name="folder_parent" class="form-select">
+                            <option value="">-- kein übergeordneter Ordner --</option>
+                            {% for folder in folders %}
+                                <option value="{{ folder.pk }}">{{ folder }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary">Ordner anlegen</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Neues Label anlegen</h2>
+
+                <form method="post" action="{% url 'document_label_create' %}">
+                    {% csrf_token %}
+
+                    {% if request.user.is_superuser %}
+                        <div class="mb-3">
+                            <label for="id_label_tenant" class="form-label">Mandant</label>
+                            <select id="id_label_tenant" name="tenant" class="form-select">
+                                <option value="">-- aktiven Mandanten verwenden --</option>
+                                {% for t in tenants %}
+                                    <option value="{{ t.pk }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="id_label_name" class="form-label">Labelname</label>
+                        <input type="text" id="id_label_name" name="label_name" class="form-control" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-outline-primary">Label anlegen</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

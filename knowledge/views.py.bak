@@ -1,0 +1,110 @@
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404, redirect, render
+
+from processing.models import ProcessingActivity
+
+from legal.forms import LegalAssessmentForm
+from legal.models import LegalAssessment
+from legal.services import generate_legal_assessment_actions
+from legal.services import apply_ai_result_to_assessment
+
+from knowledge.ai_services import build_ai_context_bundle
+from knowledge.ai_services import build_ai_prompt_stub
+from knowledge.ai_engine import generate_ai_structured_output
+
+
+@login_required
+def legal_assessment_upsert(request, processing_id):
+    processing_activity = get_object_or_404(ProcessingActivity, pk=processing_id)
+
+    legal_assessment, created = LegalAssessment.objects.get_or_create(
+        processing_activity=processing_activity,
+        defaults={"tenant": processing_activity.tenant},
+    )
+
+    if request.method == "POST":
+        form = LegalAssessmentForm(request.POST, instance=legal_assessment)
+
+        if form.is_valid():
+            assessment = form.save(commit=False)
+
+            if not assessment.tenant_id:
+                assessment.tenant = processing_activity.tenant
+
+            action = request.POST.get("action")
+
+            if action == "generate_ai":
+                assessment.save()
+
+                topic = "legal_assessment"
+                target_label = "Juristische Bewertung"
+
+                if assessment.legal_basis == LegalAssessment.LegalBasis.LEGITIMATE_INTERESTS:
+                    topic = "legitimate_interest"
+                    target_label = "Interessenabwägung"
+
+                context_bundle = build_ai_context_bundle(
+                    topic=topic,
+                    processing_activity=processing_activity,
+                    legal_assessment=assessment,
+                )
+
+                prompt = build_ai_prompt_stub(
+                    topic=topic,
+                    target_label=target_label,
+                    processing_activity=processing_activity,
+                    legal_assessment=assessment,
+                )
+
+                assessment.ai_prompt = prompt
+                assessment.ai_prompt_version = "v1"
+                assessment.save()
+
+                try:
+                    ai_result = generate_ai_structured_output(topic, context_bundle)
+
+                    apply_ai_result_to_assessment(assessment, ai_result, topic)
+
+                    if topic == "legal_assessment":
+                        assessment.ai_suggestion = ai_result.get("text", "") or ai_result.get(
+                            "ai_suggestion", ""
+                        )
+                    else:
+                        assessment.ai_suggestion = assessment.legal_assessment_text
+
+                    assessment.save()
+                    generate_legal_assessment_actions(assessment)
+
+                    messages.success(request, "Der KI-Vorschlag wurde erzeugt.")
+
+                except Exception as exc:
+                    messages.error(
+                        request,
+                        f"Beim Erzeugen des KI-Vorschlags ist ein Fehler aufgetreten: {exc}"
+                    )
+
+                return redirect(f"/legal/processing/{processing_activity.pk}/assessment/")
+
+            assessment.save()
+            generate_legal_assessment_actions(assessment)
+
+            messages.success(request, "Die Rechtsbewertung wurde gespeichert.")
+
+            if action == "save_and_return":
+                return redirect("processing_detail", pk=processing_activity.pk)
+
+            return redirect(f"/legal/processing/{processing_activity.pk}/assessment/")
+    else:
+        form = LegalAssessmentForm(instance=legal_assessment)
+
+    return render(
+        request,
+        "legal/legal_assessment_form.html",
+        {
+            "processing_activity": processing_activity,
+            "legal_assessment": legal_assessment,
+            "form": form,
+            "is_new": created,
+        },
+    )

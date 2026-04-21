@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}Spezialaudit {{ item.audit_year }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Spezialaudit {{ item.audit_year }}</h1>
+        <p class="text-muted mb-0">{{ item.processor.name }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'audit_responses' item.pk %}" class="btn btn-success">Spezialaudit-Checkliste</a>
+        <a href="{% url 'audit_edit' item.pk %}" class="btn btn-primary">Bearbeiten</a>
+        <a href="{% url 'audit_list' %}" class="btn btn-outline-secondary">Zurück zur Liste</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Grunddaten</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Auftragsverarbeiter</dt>
+                    <dd class="col-sm-8">{{ item.processor.name }}</dd>
+
+                    <dt class="col-sm-4">Auditjahr</dt>
+                    <dd class="col-sm-8">{{ item.audit_year }}</dd>
+
+                    <dt class="col-sm-4">Audittyp</dt>
+                    <dd class="col-sm-8">{{ item.get_audit_type_display }}</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">{{ item.get_status_display }}</dd>
+
+                    <dt class="col-sm-4">Prüfer</dt>
+                    <dd class="col-sm-8">{{ item.auditor_name|default:"—" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Termine und Ergebnis</h2>
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Startdatum</dt>
+                    <dd class="col-sm-8">{{ item.start_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Fällig</dt>
+                    <dd class="col-sm-8">{{ item.due_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Abgeschlossen</dt>
+                    <dd class="col-sm-8">{{ item.completion_date|default:"—" }}</dd>
+
+                    <dt class="col-sm-4">Ergebnis</dt>
+                    <dd class="col-sm-8">
+                        {% if item.overall_result %}
+                            {{ item.get_overall_result_display }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Folgeprüfung</dt>
+                    <dd class="col-sm-8">{% if item.follow_up_required %}Ja{% else %}Nein{% endif %}</dd>
+
+                    <dt class="col-sm-4">Nächste Prüfung</dt>
+                    <dd class="col-sm-8">{{ item.next_review_date|default:"—" }}</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Zusammenfassung</h2>
+                <p>{{ item.summary|default:"—"|linebreaks }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

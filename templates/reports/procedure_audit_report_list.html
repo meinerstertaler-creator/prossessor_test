@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Auditberichte{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Auditberichte</h1>
+        <p class="text-muted mb-0">Verfahrensorientierte Audits</p>
+    </div>
+    <div>
+        <a href="{% url 'reports_home' %}" class="btn btn-outline-secondary">Zurück zu Reports</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Titel</th>
+                            <th>Mandant</th>
+                            <th>Jahr</th>
+                            <th>Status</th>
+                            <th>Bericht</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>{{ item.title }}</td>
+                                <td>{{ item.tenant.name }}</td>
+                                <td>{{ item.audit_year }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>
+                                    <a href="{% url 'procedure_audit_report' item.pk %}" class="btn btn-sm btn-primary">
+                                        Bericht öffnen
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Es sind keine Audits für Berichte vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

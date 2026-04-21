@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Auditbewertungen{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Auditbewertungen</h1>
+        <p class="text-muted mb-0">{{ audit.processor.name }} / {{ audit.audit_year }}</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary">Zurück zum Audit</a>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    {% if response_items %}
+        {% for item in response_items %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">{{ item.question.get_category_display }}</h2>
+                    <p class="fw-semibold">{{ item.question.question_text }}</p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Bewertung</label>
+                            {{ item.form.rating }}
+                            <div class="text-danger small">{{ item.form.rating.errors }}</div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label class="form-label">Kommentar</label>
+                            {{ item.form.comment }}
+                            <div class="text-danger small">{{ item.form.comment.errors }}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.evidence_available }}
+                                <label class="form-check-label">
+                                    Nachweis vorhanden
+                                </label>
+                            </div>
+                            <div class="text-danger small">{{ item.form.evidence_available.errors }}</div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-check mt-4">
+                                {{ item.form.action_required }}
+                                <label class="form-check-label">
+                                    Maßnahme erforderlich
+                                </label>
+                            </div>
+                            <div class="text-danger small">{{ item.form.action_required.errors }}</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+
+      <div class="d-flex gap-2">
+    <button type="submit" class="btn btn-primary">Bewertungen speichern</button>
+    <a href="{% url 'create_actions_from_audit' audit.pk %}" class="btn btn-warning">Maßnahmen erzeugen</a>
+    <a href="{% url 'audit_detail' audit.pk %}" class="btn btn-outline-secondary">Abbrechen</a>
+</div>
+    {% else %}
+        <div class="alert alert-warning">
+            Es sind keine aktiven Auditfragen vorhanden.
+        </div>
+    {% endif %}
+</form>
+{% endblock %}

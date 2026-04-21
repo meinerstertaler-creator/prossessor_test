@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Verfahrensorientierte Audits{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Verfahrensorientierte Audits</h1>
+        <p class="text-muted mb-0">Mandantenbezogene Datenschutz-Audits auf Basis der vorhandenen Verfahren.</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{% url 'audit_dashboard' %}" class="btn btn-outline-secondary">Zur Auditübersicht</a>
+        <a href="{% url 'audit_dashboard' %}" class="btn btn-primary">Neues Audit</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        {% if items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>Jahr</th>
+                            <th>Titel</th>
+                            <th>Mandant</th>
+                            <th>Typ</th>
+                            <th>Status</th>
+                            <th>Durchführung</th>
+                            <th>Ergebnis</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>{{ item.audit_year }}</td>
+                                <td>{{ item.title }}</td>
+                                <td>{{ item.tenant.name }}</td>
+                                <td>{{ item.get_audit_type_display }}</td>
+                                <td>{{ item.get_status_display }}</td>
+                                <td>{{ item.get_execution_type_display }}</td>
+                                <td>
+                                    {% if item.overall_result %}
+                                        {{ item.get_overall_result_display }}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{% url 'procedure_audit_detail' item.pk %}" class="btn btn-sm btn-outline-primary">Öffnen</a>
+                                    <a href="{% url 'procedure_audit_edit' item.pk %}" class="btn btn-sm btn-outline-secondary">Bearbeiten</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Es sind noch keine verfahrensorientierten Audits vorhanden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

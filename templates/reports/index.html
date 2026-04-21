@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Reports{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Reports</h1>
+
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Verzeichnis der Verarbeitungstätigkeiten</h2>
+                <p>
+                    Übersicht aller erfassten Verarbeitungsvorgänge nach Art. 30 DSGVO.
+                </p>
+                <a href="{% url 'processing_report' %}" class="btn btn-primary">
+                    Verarbeitungsvorgänge anzeigen
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Auditberichte</h2>
+                <p>
+                    Automatisch erzeugte Berichte zu verfahrensorientierten Audits
+                    mit ergänzendem Auditor-Freitext.
+                </p>
+                <a href="{% url 'procedure_audit_report_list' %}" class="btn btn-primary">
+                    Auditberichte öffnen
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

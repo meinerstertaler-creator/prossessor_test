@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-2">{{ page_title }}</h1>
+<p class="text-muted mb-4">
+    Audit: {{ audit.title }} / {{ audit.tenant.name }}
+</p>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    Bitte prüfe die markierten Felder.
+                </div>
+            {% endif %}
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-8">
+                    <label class="form-label">Bezeichnung des neuen Verfahrens</label>
+                    {{ form.title }}
+                    <div class="text-danger small">{{ form.title.errors }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label">Fachbereich / Bereich</label>
+                    {{ form.department_hint }}
+                    <div class="text-danger small">{{ form.department_hint.errors }}</div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Ansprechpartner</label>
+                    {{ form.contact_person }}
+                    <div class="text-danger small">{{ form.contact_person.errors }}</div>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Kurzbeschreibung</label>
+                    {{ form.description }}
+                    <div class="text-danger small">{{ form.description.errors }}</div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        {{ form.is_already_active }}
+                        <label class="form-check-label" for="{{ form.is_already_active.id_for_label }}">
+                            Bereits produktiv im Einsatz
+                        </label>
+                    </div>
+                    <div class="text-danger small">{{ form.is_already_active.errors }}</div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-check mt-4">
+                        {{ form.requires_follow_up }}
+                        <label class="form-check-label" for="{{ form.requires_follow_up.id_for_label }}">
+                            Weitere Prüfung / Nachbearbeitung erforderlich
+                        </label>
+                    </div>
+                    <div class="text-danger small">{{ form.requires_follow_up.errors }}</div>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Weitere Hinweise</label>
+                    {{ form.notes }}
+                    <div class="text-danger small">{{ form.notes.errors }}</div>
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">{{ submit_label }}</button>
+                <a href="{% url 'procedure_audit_new_activities' audit.pk %}" class="btn btn-outline-secondary">
+                    Zurück zur Liste
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

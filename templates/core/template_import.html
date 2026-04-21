@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h2>Vorlagen für Mandanten importieren</h2>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="mb-3">
+        <label>Mandant</label>
+        <select name="tenant" class="form-control" required>
+            {% for t in tenants %}
+            <option value="{{ t.id }}">{{ t.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <h4>Vorlagengruppen</h4>
+
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="groups" value="general">
+        <label class="form-check-label">
+            Allgemeine Verfahren
+        </label>
+    </div>
+
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="groups" value="medical">
+        <label class="form-check-label">
+            Arztpraxis
+        </label>
+    </div>
+
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" name="groups" value="legal">
+        <label class="form-check-label">
+            Rechtsanwaltskanzlei
+        </label>
+    </div>
+
+    <br>
+
+    <button class="btn btn-primary">
+        Vorlagen importieren
+    </button>
+</form>
+
+{% endblock %}

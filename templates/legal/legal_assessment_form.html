@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Rechtsbewertung{% endblock %}
+
+{% block content %}
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">Rechtsbewertung</h1>
+        <p class="text-muted mb-0">
+            {{ processing_activity.title }}
+        </p>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="{% url 'processing_detail' processing_activity.pk %}" class="btn btn-primary">
+            Verfahren
+        </a>
+
+        <a href="{% url 'dpia:dpia_detail' processing_activity.pk %}" class="btn btn-outline-dark">
+            DSFA-Prüfung
+        </a>
+
+        <a href="{% url 'processing_list' %}" class="btn btn-outline-secondary">
+            Zurück zur Liste
+        </a>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="row g-4">
+
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Rechtsgrundlagen</h2>
+
+                    <label class="form-label">Art. 6 DSGVO</label>
+                    {{ form.legal_basis }}
+
+                    <label class="form-label mt-3">Art. 9 DSGVO</label>
+                    {{ form.special_legal_basis }}
+
+                    <div class="form-check mt-3">
+                        {{ form.professional_secrecy }}
+                        <label class="form-check-label">
+                            Berufsgeheimnis / § 203 StGB
+                        </label>
+                    </div>
+
+                    <div class="form-check mt-2">
+                        {{ form.section_203_process_implemented }}
+                        <label class="form-check-label">
+                            203er Verfahren implementiert
+                        </label>
+                    </div>
+
+                    <div class="small text-muted mt-2">
+                        Nur markieren, wenn für dieses Verfahren ein 203er Verfahren tatsächlich umgesetzt und dokumentiert ist.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6" id="legitimate-interest-card">
+            <div class="card h-100 border-warning">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Interessenabwägung</h2>
+
+                    <div class="form-check mb-3">
+                        {{ form.legitimate_interest_test }}
+                        <label class="form-check-label">
+                            Interessenabwägung durchgeführt
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Berechtigtes Interesse</label>
+                        {{ form.legitimate_interest_purpose }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Auswirkungen auf Betroffene</label>
+                        {{ form.data_subject_impact }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Schutzmaßnahmen</label>
+                        {{ form.safeguards }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Ergebnis</label>
+                        {{ form.legitimate_interest_outcome }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Begründung</label>
+                        {{ form.legitimate_interest_reasoning }}
+                    </div>
+
+                    <div class="form-check">
+                        {{ form.legitimate_interest_completed }}
+                        <label class="form-check-label">
+                            Interessenabwägung abgeschlossen
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                        <div>
+                            <h2 class="h5 mb-1">Risiko und DSFA</h2>
+                            <div class="small text-muted">
+                                Die Rechtsbewertung spiegelt den Status der DSFA-Prüfung wider.
+                            </div>
+                        </div>
+                        <a href="{% url 'dpia:dpia_detail' processing_activity.pk %}" class="btn btn-outline-dark btn-sm">
+                            DSFA-Prüfung öffnen
+                        </a>
+                    </div>
+
+                    <label class="form-label">Risikoeinstufung</label>
+                    {{ form.risk_level }}
+
+                    <div class="mt-3">
+                        <div class="small text-muted mb-1">Status DSFA</div>
+                        <span class="badge text-bg-{{ legal_assessment.dpia_check_result_badge_class }}">
+                            {{ legal_assessment.dpia_check_result_label }}
+                        </span>
+                    </div>
+
+                    {% if legal_assessment.no_dpia_check_required_reason %}
+                        <div class="alert alert-success mt-3">
+                            <strong>Kein DSFA-Check erforderlich</strong><br>
+                            {{ legal_assessment.get_no_dpia_check_required_reason_display }}
+                            {% if legal_assessment.no_dpia_check_required_note %}
+                                <div class="mt-2 small">
+                                    {{ legal_assessment.no_dpia_check_required_note|linebreaksbr }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="small text-muted mb-3">
+                            Diese Entscheidung ist in der Rechtsbewertung dokumentiert. Eine gesonderte DSFA-Prüfung ist damit grundsätzlich entbehrlich.
+                        </div>
+
+                        <button type="button"
+                                class="btn btn-outline-secondary btn-sm mb-3"
+                                id="toggle-dpia-override-edit">
+                            Entscheidung ändern / aufheben
+                        </button>
+
+                        <div id="dpia-override-edit-fields" {% if not force_show_dpia_override_edit %}style="display: none;"{% endif %}>
+                            <label class="form-label">{{ form.no_dpia_check_required_reason.label }}</label>
+                            {{ form.no_dpia_check_required_reason }}
+
+                            <div class="mt-3">
+                                <label class="form-label">{{ form.no_dpia_check_required_note.label }}</label>
+                                {{ form.no_dpia_check_required_note }}
+                            </div>
+
+                            <div class="alert alert-warning mt-3 mb-0">
+                                <div class="form-check">
+                                    <input
+                                        class="form-check-input"
+                                        type="checkbox"
+                                        name="confirm_remove_dpia_override"
+                                        id="confirm_remove_dpia_override"
+                                        value="1"
+                                    >
+                                    <label class="form-check-label" for="confirm_remove_dpia_override">
+                                        Aufhebung der DSFA-Ausnahme ausdrücklich bestätigen
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="small text-muted mt-2">
+                                Wenn du die Entscheidung aufheben willst, setze das Auswahlfeld wieder leer, hake die Bestätigung an und speichere.
+                            </div>
+                        </div>
+
+                    {% elif dpia_check and dpia_check.recommendation in "mandatory recommended" %}
+                        <div class="alert alert-{% if dpia_check.recommendation == 'mandatory' %}danger{% else %}warning{% endif %} mb-0">
+                            <strong>{{ dpia_check.recommendation_label }}</strong><br>
+                            {% if dpia_check.recommendation == "mandatory" %}
+                                Die DSFA-Prüfung ergibt, dass eine DSFA erforderlich ist. Eine gegenteilige Dokumentation ist hier nicht vorgesehen.
+                            {% else %}
+                                Die DSFA-Prüfung ergibt, dass eine DSFA empfohlen ist. Bitte die DSFA-Prüfung weiter vertiefen oder die DSFA-Durchführung dokumentieren.
+                            {% endif %}
+                        </div>
+
+                        {% if dpia_check %}
+                            <div class="small text-muted mt-2">
+                                {{ dpia_check.recommendation_reason }}
+                            </div>
+                        {% endif %}
+
+                    {% else %}
+                        <div class="alert alert-secondary">
+                            <strong>Noch nicht geprüft</strong><br>
+                            Es liegt derzeit weder ein DSFA-Ergebnis noch eine dokumentierte Entbehrlichkeit vor.
+                        </div>
+
+                        <label class="form-label">{{ form.no_dpia_check_required_reason.label }}</label>
+                        {{ form.no_dpia_check_required_reason }}
+
+                        <div class="mt-3">
+                            <label class="form-label">{{ form.no_dpia_check_required_note.label }}</label>
+                            {{ form.no_dpia_check_required_note }}
+                        </div>
+
+                        <div class="small text-muted mt-2">
+                            Nur verwenden, wenn kein gesonderter DSFA-Check erforderlich ist. Andernfalls bitte die DSFA-Prüfung öffnen.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-6">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">Juristische Bewertung</h2>
+
+                    <label class="form-label">Bewertung</label>
+                    {{ form.legal_assessment_text }}
+
+                    <label class="form-label mt-3">Offene Punkte</label>
+                    {{ form.open_issues }}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5 mb-3">KI-Unterstützung</h2>
+
+                    <button type="submit" name="action" value="generate_ai" class="btn btn-outline-primary mb-3">
+                        🤖 KI-Vorschlag erstellen
+                    </button>
+
+                    {% if form.instance.ai_prompt %}
+                        <div class="mb-3">
+                            <label class="form-label">Prompt</label>
+                            {{ form.ai_prompt }}
+                        </div>
+                    {% endif %}
+
+                    {% if form.instance.ai_suggestion %}
+                        <div class="mb-3">
+                            <label class="form-label">KI-Vorschlag</label>
+                            {{ form.ai_suggestion }}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2">
+        <button type="submit" name="action" value="save" class="btn btn-primary">
+            Speichern
+        </button>
+
+        <button type="submit" name="action" value="save_and_return" class="btn btn-success">
+            Speichern und zurück
+        </button>
+
+        <a href="{% url 'processing_detail' processing_activity.pk %}" class="btn btn-outline-secondary">
+            Abbrechen
+        </a>
+    </div>
+</form>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleLegitimateInterestSection() {
+        const field = document.getElementById("{{ form.legal_basis.id_for_label }}");
+        const card = document.getElementById("legitimate-interest-card");
+
+        if (!field || !card) {
+            return;
+        }
+
+        const show = field.value === "legitimate_interests";
+        card.style.display = show ? "" : "none";
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const legalBasisField = document.getElementById("{{ form.legal_basis.id_for_label }}");
+        const toggleButton = document.getElementById("toggle-dpia-override-edit");
+        const editFields = document.getElementById("dpia-override-edit-fields");
+
+        toggleLegitimateInterestSection();
+
+        if (legalBasisField) {
+            legalBasisField.addEventListener("change", toggleLegitimateInterestSection);
+        }
+
+        if (toggleButton && editFields) {
+            toggleButton.addEventListener("click", function () {
+                editFields.style.display = "";
+                toggleButton.style.display = "none";
+            });
+        }
+    });
+</script>
+{% endblock %}

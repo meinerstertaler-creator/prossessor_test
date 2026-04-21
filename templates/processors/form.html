@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">{{ page_title }}</h1>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    Bitte prüfe die markierten Felder.
+                </div>
+            {% endif %}
+
+            <h2 class="h5">Anbieter / Einordnung</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label" for="id_catalog_entry">Bekannter Anbieter</label>
+                    {{ form.catalog_entry }}
+                    <div class="form-text">
+                        Auswahl eines bekannten Anbieters. Leere Felder können automatisch aus dem Katalog befüllt werden.
+                    </div>
+                </div>
+
+                <div class="col-md-6 d-flex align-items-end">
+                    <button type="button" id="apply-catalog-entry" class="btn btn-outline-primary">
+                        Katalogdaten übernehmen
+                    </button>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_provider_roles">AV-Rollen</label>
+                    {{ form.provider_roles }}
+                    <div class="form-text">
+                        Mehrfachauswahl möglich.
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_custom_provider_role">Eigene / abweichende Rolle</label>
+                    {{ form.custom_provider_role }}
+                </div>
+
+                <div class="col-md-12">
+                    <div id="provider-catalog-hints" class="alert alert-light mb-0" style="display: none;">
+                        <div><strong>Kataloghinweise</strong></div>
+                        <div id="provider-catalog-role-hint" class="small text-muted mt-1"></div>
+                        <div id="provider-catalog-av-hint" class="small mt-1"></div>
+                        <div id="provider-catalog-tom-hint" class="small"></div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="h5">Grunddaten</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label" for="id_name">Name</label>
+                    {{ form.name }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_status">Status</label>
+                    {{ form.status }}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label" for="id_service_description">Leistungsbeschreibung</label>
+                    {{ form.service_description }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_department">Fachbereich</label>
+                    {{ form.department }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_risk_class">Risikoklasse</label>
+                    {{ form.risk_class }}
+                </div>
+            </div>
+
+            <h2 class="h5">Kontakt</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label" for="id_contact_person">Ansprechpartner</label>
+                    {{ form.contact_person }}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label" for="id_email">E-Mail</label>
+                    {{ form.email }}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label" for="id_phone">Telefon</label>
+                    {{ form.phone }}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label" for="id_address">Adresse</label>
+                    {{ form.address }}
+                </div>
+            </div>
+
+            <h2 class="h5">Datenverarbeitung</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="form-label" for="id_data_categories">Datenkategorien</label>
+                    {{ form.data_categories }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_data_subject_groups">Betroffenengruppen</label>
+                    {{ form.data_subject_groups }}
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label" for="id_server_locations">Serverstandorte</label>
+                    {{ form.server_locations }}
+                </div>
+
+                <div class="col-md-6">
+                    <div class="form-check mt-4">
+                        {{ form.third_country_transfer }}
+                        <label class="form-check-label" for="id_third_country_transfer">
+                            Drittlandtransfer
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label" for="id_third_country_description">Beschreibung Drittlandtransfer</label>
+                    {{ form.third_country_description }}
+                </div>
+            </div>
+
+            <h2 class="h5">Verträge und Audits</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        {{ form.av_contract_exists }}
+                        <label class="form-check-label" for="id_av_contract_exists">
+                            AV-Vertrag vorhanden
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label" for="id_contract_valid_from">Vertrag gültig ab</label>
+                    {{ form.contract_valid_from }}
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label" for="id_contract_valid_until">Vertrag gültig bis</label>
+                    {{ form.contract_valid_until }}
+                </div>
+
+                <div class="col-md-3">
+                    <div class="form-check mt-4">
+                        {{ form.tom_exists }}
+                        <label class="form-check-label" for="id_tom_exists">
+                            TOM vorhanden
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label" for="id_last_audit_date">Letztes Audit</label>
+                    {{ form.last_audit_date }}
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label" for="id_next_audit_date">Nächstes Audit</label>
+                    {{ form.next_audit_date }}
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label" for="id_certifications">Zertifizierungen</label>
+                    {{ form.certifications }}
+                </div>
+            </div>
+
+            <h2 class="h5">Bemerkungen</h2>
+            <div class="mb-4">
+                {{ form.notes }}
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    {{ submit_label }}
+                </button>
+
+                <a href="{% url 'processor_list' %}" class="btn btn-outline-secondary">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{ provider_catalog_payload|json_script:"provider-catalog-data" }}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const catalogField = document.getElementById("id_catalog_entry");
+        const applyButton = document.getElementById("apply-catalog-entry");
+
+        const nameField = document.getElementById("id_name");
+        const addressField = document.getElementById("id_address");
+        const contactField = document.getElementById("id_contact_person");
+        const emailField = document.getElementById("id_email");
+        const rolesField = document.getElementById("id_provider_roles");
+
+        const hintsBox = document.getElementById("provider-catalog-hints");
+        const roleHint = document.getElementById("provider-catalog-role-hint");
+        const avHint = document.getElementById("provider-catalog-av-hint");
+        const tomHint = document.getElementById("provider-catalog-tom-hint");
+
+        const catalogDataNode = document.getElementById("provider-catalog-data");
+
+        if (!catalogField || !applyButton || !catalogDataNode) {
+            return;
+        }
+
+        let catalogEntries = [];
+        try {
+            catalogEntries = JSON.parse(catalogDataNode.textContent || "[]");
+        } catch (error) {
+            console.error("Katalogdaten konnten nicht gelesen werden:", error);
+            return;
+        }
+
+        function getSelectedEntry() {
+            const selectedId = String(catalogField.value || "");
+            return catalogEntries.find(entry => String(entry.id) === selectedId) || null;
+        }
+
+        function getSelectedValues(selectElement) {
+            if (!selectElement) return [];
+            return Array.from(selectElement.selectedOptions).map(option => option.value);
+        }
+
+        function setMultiSelectValues(selectElement, values) {
+            if (!selectElement) return;
+            const normalized = values.map(String);
+            Array.from(selectElement.options).forEach(option => {
+                option.selected = normalized.includes(String(option.value));
+            });
+        }
+
+        function updateHints(entry) {
+            if (!entry) {
+                hintsBox.style.display = "none";
+                roleHint.textContent = "";
+                avHint.textContent = "";
+                tomHint.textContent = "";
+                return;
+            }
+
+            hintsBox.style.display = "";
+            roleHint.textContent = entry.role_names.length
+                ? "Rollen im Katalog: " + entry.role_names.join(", ")
+                : "Im Katalog sind derzeit keine Rollen hinterlegt.";
+
+            avHint.textContent = entry.standard_av_available
+                ? "Hinweis: Standard-AV ist im Katalog als vorhanden markiert."
+                : "Hinweis: Standard-AV ist im Katalog derzeit nicht als vorhanden markiert.";
+
+            tomHint.textContent = entry.standard_tom_available
+                ? "Hinweis: TOM ist im Katalog als vorhanden markiert."
+                : "Hinweis: TOM ist im Katalog derzeit nicht als vorhanden markiert.";
+        }
+
+        function applyCatalogEntry() {
+            const entry = getSelectedEntry();
+            updateHints(entry);
+
+            if (!entry) {
+                return;
+            }
+
+            if (nameField && !nameField.value.trim()) {
+                nameField.value = entry.legal_name || entry.name || "";
+            }
+
+            if (addressField && !addressField.value.trim()) {
+                addressField.value = entry.address || "";
+            }
+
+            if (contactField && !contactField.value.trim()) {
+                contactField.value = entry.default_contact_person || "";
+            }
+
+            if (emailField && !emailField.value.trim()) {
+                emailField.value = entry.default_contact_email || "";
+            }
+
+            if (rolesField) {
+                const selectedRoles = getSelectedValues(rolesField);
+                if (selectedRoles.length === 0 && Array.isArray(entry.role_ids) && entry.role_ids.length > 0) {
+                    setMultiSelectValues(rolesField, entry.role_ids);
+                }
+            }
+        }
+
+        catalogField.addEventListener("change", function () {
+            updateHints(getSelectedEntry());
+            applyCatalogEntry();
+        });
+
+        applyButton.addEventListener("click", function () {
+            applyCatalogEntry();
+        });
+
+        if (catalogField.value) {
+            updateHints(getSelectedEntry());
+        }
+    });
+</script>
+{% endblock %}

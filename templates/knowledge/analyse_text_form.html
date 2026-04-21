@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+        <h1 class="h3 mb-1">{{ page_title }}</h1>
+        {% if item %}
+            <p class="text-muted mb-0">{{ item.title }}</p>
+        {% else %}
+            <p class="text-muted mb-0">Interner Rohtext für KI-Auswertung</p>
+        {% endif %}
+    </div>
+
+    <div class="d-flex gap-2">
+        <a href="{% url 'knowledge:analyse_text_list' %}" class="btn btn-outline-secondary">
+            ← Zurück zur Übersicht
+        </a>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+
+    <div class="row g-4">
+        <div class="col-12 col-xl-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Metadaten</h2>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.title.label }}</label>
+                        {{ form.title }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.topic.label }}</label>
+                        {{ form.topic }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.version.label }}</label>
+                        {{ form.version }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                    </div>
+
+                    <div class="form-check mb-2">
+                        {{ form.ai_enabled }}
+                        <label class="form-check-label">{{ form.ai_enabled.label }}</label>
+                    </div>
+
+                    <div class="form-check">
+                        {{ form.is_active }}
+                        <label class="form-check-label">{{ form.is_active.label }}</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-xl-8">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h2 class="h5">Rohtext</h2>
+                    <label class="form-label">{{ form.raw_text.label }}</label>
+                    {{ form.raw_text }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 d-flex flex-wrap gap-2">
+        <button type="submit" class="btn btn-primary">Speichern</button>
+        <button type="submit" name="save_and_return" value="1" class="btn btn-success">Speichern und zurück</button>
+        <a href="{% url 'knowledge:analyse_text_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+    </div>
+</form>
+{% endblock %}

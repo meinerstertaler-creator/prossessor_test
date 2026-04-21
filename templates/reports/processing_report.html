@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}Verzeichnis der Verarbeitungstätigkeiten{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Verzeichnis der Verarbeitungstätigkeiten</h1>
+        <p class="text-muted mb-0">Art.-30-Report V1</p>
+    </div>
+    <div>
+        <a href="{% url 'reports_home' %}" class="btn btn-outline-secondary">Zurück zu Reports</a>
+    </div>
+</div>
+
+<form method="get" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <label for="status" class="form-label">Status</label>
+        <select name="status" id="status" class="form-select">
+            <option value="">Alle</option>
+            {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+        <button type="submit" class="btn btn-primary w-100">Filtern</button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="card-body">
+        {% if items %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Bezeichnung</th>
+                            <th>Fachbereich</th>
+                            <th>Zweck</th>
+                            <th>Betroffene Personen</th>
+                            <th>Datenkategorien</th>
+                            <th>Empfänger</th>
+                            <th>Drittlandtransfer</th>
+                            <th>Löschfrist</th>
+                            <th>TOMs</th>
+                            <th>DSFA</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                            <tr>
+                                <td>{{ item.internal_id }}</td>
+                                <td>{{ item.title }}</td>
+                                <td>{{ item.department.name }}</td>
+                                <td>{{ item.purpose|truncatechars:80 }}</td>
+                                <td>{{ item.data_subject_categories|default:"—"|truncatechars:80 }}</td>
+                                <td>{{ item.personal_data_categories|default:"—"|truncatechars:80 }}</td>
+                                <td>{{ item.recipients|default:"—"|truncatechars:80 }}</td>
+                                <td>
+                                    {% if item.third_country_transfer %}
+                                        Ja
+                                    {% else %}
+                                        Nein
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.retention_period|default:"—"|truncatechars:50 }}</td>
+                                <td>{{ item.tom_summary|default:"—"|truncatechars:80 }}</td>
+                                <td>
+                                    {% if item.dpia_required %}
+                                        Ja
+                                    {% else %}
+                                        Nein
+                                    {% endif %}
+                                </td>
+                                <td>{{ item.get_status_display }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <p class="mb-0">Es wurden keine Verarbeitungsvorgänge gefunden.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

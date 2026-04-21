@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h1 class="h3 mb-4">Dashboard</h1>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Verarbeitungsvorgänge</div>
+                <div class="fs-3 fw-bold">{{ processing_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Auftragsverarbeiter</div>
+                <div class="fs-3 fw-bold">{{ processor_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Offene Maßnahmen</div>
+                <div class="fs-3 fw-bold">{{ open_actions_count }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body">
+                <div class="text-muted small">Audittermine ≤ 14 Tage</div>
+                <div class="fs-3 fw-bold">{{ audit_deadlines_count }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Überfällige Maßnahmen</h2>
+                {% if overdue_actions %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in overdue_actions %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'action_detail' item.pk %}">{{ item.title }}</a><br>
+                                <small class="text-muted">
+                                    Frist: {{ item.due_date|date:"d.m.Y" }} |
+                                    Status: {{ item.get_status_display }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Keine überfälligen Maßnahmen.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Wiedervorlagen ≤ 14 Tage</h2>
+                {% if follow_up_actions %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in follow_up_actions %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'action_detail' item.pk %}">{{ item.title }}</a><br>
+                                <small class="text-muted">
+                                    Wiedervorlage: {{ item.follow_up_date|date:"d.m.Y" }} |
+                                    Status: {{ item.get_status_display }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Keine Wiedervorlagen in den nächsten 14 Tagen.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Maßnahmen mit Frist ≤ 14 Tage</h2>
+                {% if due_actions %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in due_actions %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'action_detail' item.pk %}">{{ item.title }}</a><br>
+                                <small class="text-muted">
+                                    Frist: {{ item.due_date|date:"d.m.Y" }} |
+                                    Status: {{ item.get_status_display }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Keine Fristen in den nächsten 14 Tagen.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h5">Audittermine ≤ 14 Tage</h2>
+                {% if audit_deadlines %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in audit_deadlines %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'audit_detail' item.pk %}">{{ item.processor.name }} / {{ item.audit_year }}</a><br>
+                                <small class="text-muted">
+                                    Fällig: {{ item.due_date|date:"d.m.Y" }} |
+                                    Status: {{ item.get_status_display }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Keine Audittermine in den nächsten 14 Tagen.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5">Nächste Audit-Wiedervorlagen</h2>
+                {% if next_audit_reviews %}
+                    <ul class="list-group list-group-flush">
+                        {% for item in next_audit_reviews %}
+                            <li class="list-group-item px-0">
+                                <a href="{% url 'audit_detail' item.pk %}">{{ item.processor.name }} / {{ item.audit_year }}</a><br>
+                                <small class="text-muted">
+                                    Nächste Prüfung: {{ item.next_review_date|date:"d.m.Y" }}
+                                </small>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="mb-0">Keine Audit-Wiedervorlagen in den nächsten 14 Tagen.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
