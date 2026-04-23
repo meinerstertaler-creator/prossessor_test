@@ -9,6 +9,7 @@ from .models import (
     ProcessingActivity,
     ProcessingStandardCase,
     ProcessingTemplate,
+    TenantProcessingTemplateSetting,
 )
 
 
@@ -74,8 +75,9 @@ def _parse_bulk_template_line(line: str):
 @admin.register(Department)
 class DepartmentAdmin(admin.ModelAdmin):
     list_display = ("name", "tenant", "created_at")
-    search_fields = ("name",)
-    ordering = ("name",)
+    list_filter = ("tenant",)
+    search_fields = ("name", "tenant__name")
+    ordering = ("tenant__name", "name")
 
 
 @admin.register(ProcessingStandardCase)
@@ -263,6 +265,16 @@ class ProcessingTemplateAdmin(admin.ModelAdmin):
             "admin/processing/processingtemplate/bulk_create.html",
             context,
         )
+
+
+@admin.register(TenantProcessingTemplateSetting)
+class TenantProcessingTemplateSettingAdmin(admin.ModelAdmin):
+    list_display = ("tenant", "template", "is_enabled", "updated_at")
+    list_filter = ("tenant", "is_enabled", "template__template_group")
+    search_fields = ("tenant__name", "template__title", "template__department")
+    autocomplete_fields = ("tenant", "template")
+    list_editable = ("is_enabled",)
+    ordering = ("tenant__name", "template__template_group", "template__title")
 
 
 @admin.register(ProcessingActivity)

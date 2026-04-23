@@ -1,10 +1,17 @@
 from django import forms
 
-from .models import ProcessingActivity, ProcessingStandardCase, ProcessingTemplate
+from .models import (
+    ProcessingActivity,
+    ProcessingStandardCase,
+    ProcessingTemplate,
+    TenantProcessingTemplateSetting,
+)
 
 
 class ProcessingTemplateChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
+        if obj.department:
+            return f"{obj.get_template_group_display()} – {obj.title} ({obj.department})"
         return f"{obj.get_template_group_display()} – {obj.title}"
 
 
@@ -126,9 +133,11 @@ class ProcessingActivityForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         show_template_field = kwargs.pop("show_template_field", False)
+        tenant = kwargs.pop("tenant", None)
         super().__init__(*args, **kwargs)
 
         self.show_template_field = show_template_field
+        self.tenant = tenant
 
         self.fields["department"].empty_label = "Bitte Fachbereich auswählen"
 
@@ -137,9 +146,17 @@ class ProcessingActivityForm(forms.ModelForm):
         )
         self.fields["standard_case"].empty_label = "Kein DSFA-Standardfall ausgewählt"
 
-        self.fields["template_source"].queryset = (
-            ProcessingTemplate.objects.filter(is_active=True).order_by("template_group", "title")
-        )
+        template_queryset = ProcessingTemplate.objects.filter(is_active=True)
+
+        if tenant is not None:
+            disabled_template_ids = TenantProcessingTemplateSetting.objects.filter(
+                tenant=tenant,
+                is_enabled=False,
+            ).values_list("template_id", flat=True)
+
+            template_queryset = template_queryset.exclude(pk__in=disabled_template_ids)
+
+        self.fields["template_source"].queryset = template_queryset.order_by("template_group", "title")
         self.fields["template_source"].empty_label = "Keine Vorlage verwenden"
 
         if not self.show_template_field:
