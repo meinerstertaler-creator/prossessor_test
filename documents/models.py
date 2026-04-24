@@ -4,6 +4,7 @@ from django.db import models
 from accounts.models import Tenant
 from actions.models import ActionItem
 from audits.models import Audit
+from knowledge.models import TextTemplate
 from legal.models import LegalAssessment
 from processing.models import ProcessingActivity
 from processors.models import Processor
@@ -69,6 +70,16 @@ class Document(models.Model):
         AUDIT_EVIDENCE = "audit_evidence", "Audit-Nachweis"
         OTHER = "other", "Sonstiges"
 
+    class DocumentOrigin(models.TextChoices):
+        UPLOAD = "upload", "Upload"
+        TEMPLATE_COPY = "template_copy", "Kopie aus Mustertext"
+        GENERATED = "generated", "Generiert"
+
+    class DocumentStatus(models.TextChoices):
+        UNEDITED = "unedited", "Unbearbeitet"
+        IN_PROGRESS = "in_progress", "In Bearbeitung"
+        FINAL = "final", "Final"
+
     tenant = models.ForeignKey(
         Tenant,
         on_delete=models.CASCADE,
@@ -86,6 +97,30 @@ class Document(models.Model):
     file = models.FileField(upload_to="documents/")
     version = models.CharField(max_length=100, blank=True)
     description = models.TextField(blank=True, default="N/A")
+
+    origin = models.CharField(
+        max_length=20,
+        choices=DocumentOrigin.choices,
+        default=DocumentOrigin.UPLOAD,
+        verbose_name="Herkunft",
+    )
+
+    document_status = models.CharField(
+        max_length=20,
+        choices=DocumentStatus.choices,
+        default=DocumentStatus.UNEDITED,
+        verbose_name="Bearbeitungsstatus",
+    )
+
+    source_text_template = models.ForeignKey(
+        TextTemplate,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="derived_documents",
+        verbose_name="Quelle Mustertext",
+        help_text="Falls dieses Dokument aus einem Mustertext kopiert wurde, steht hier die Quelle.",
+    )
 
     folder = models.ForeignKey(
         DocumentFolder,

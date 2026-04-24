@@ -81,6 +81,8 @@ def _copy_catalog_file_to_document(*, processor, source_field, document_type, ti
             title=title,
             document_type=document_type,
             description="Aus dem Anbieter-Katalog übernommen.",
+            origin=Document.DocumentOrigin.GENERATED,
+            document_status=Document.DocumentStatus.UNEDITED,
             source_catalog_updated_at=processor.catalog_entry.updated_at if processor.catalog_entry else None,
         )
         new_document.file.save(
@@ -136,7 +138,6 @@ def _catalog_update_required(processor):
     if not catalog:
         return False
 
-    # Fall 1: Im Katalog gibt es Standarddokumente, aber beim Tenant fehlen sie noch
     has_av_doc = Document.objects.filter(
         related_processor=processor,
         document_type=Document.DocumentType.AV_CONTRACT,
@@ -153,7 +154,6 @@ def _catalog_update_required(processor):
     if catalog.standard_tom_file and not has_tom_doc:
         return True
 
-    # Fall 2: Tenant-Dokumente existieren, aber Katalog ist neuer
     relevant_documents = Document.objects.filter(
         related_processor=processor,
         document_type__in=[
@@ -262,7 +262,6 @@ def processor_create(request):
 def processor_detail(request, pk):
     item = get_object_or_404(_tenant_filtered_processor_queryset(request), pk=pk)
 
-    # Beim Öffnen fehlende Standarddokumente automatisch übernehmen
     copied = _copy_catalog_documents_to_tenant(item)
     if copied["av_created"] or copied["tom_created"]:
         copied_parts = []

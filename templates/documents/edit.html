@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Dokument bearbeiten{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-1">Dokument bearbeiten</h1>
+        <p class="text-muted mb-0">{{ item.title }}</p>
+    </div>
+
+    <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">
+        Zurück zur Liste
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="id_title" class="form-label">Titel</label>
+                    <input type="text" id="id_title" name="title" class="form-control" value="{{ item.title }}" required>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="id_version" class="form-label">Version</label>
+                    <input type="text" id="id_version" name="version" class="form-control" value="{{ item.version }}">
+                </div>
+
+                <div class="col-md-3">
+                    <label for="id_document_status" class="form-label">Bearbeitungsstatus</label>
+                    <select id="id_document_status" name="document_status" class="form-select">
+                        {% for value, label in document_statuses %}
+                            <option value="{{ value }}" {% if item.document_status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label for="id_file" class="form-label">Datei ersetzen (optional)</label>
+                    <input type="file" id="id_file" name="file" class="form-control">
+                    {% if item.file %}
+                        <div class="form-text">
+                            Aktuelle Datei: {{ item.file.name }}
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-6">
+                    <label for="id_related_processing_activity" class="form-label">Verfahren</label>
+                    <select id="id_related_processing_activity" name="related_processing_activity" class="form-select">
+                        <option value="">-- kein Verfahren --</option>
+                        {% for p in processing_choices %}
+                            <option value="{{ p.pk }}"
+                                {% if item.related_processing_activity and item.related_processing_activity.pk == p.pk %}selected{% endif %}>
+                                {{ p.title }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="id_related_processor" class="form-label">Auftragsverarbeiter</label>
+                    <select id="id_related_processor" name="related_processor" class="form-select">
+                        <option value="">-- kein Auftragsverarbeiter --</option>
+                        {% for p in processor_choices %}
+                            <option value="{{ p.pk }}"
+                                {% if item.related_processor and item.related_processor.pk == p.pk %}selected{% endif %}>
+                                {{ p.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label for="id_description" class="form-label">Beschreibung</label>
+                    <textarea id="id_description" name="description" class="form-control" rows="4">{{ item.description }}</textarea>
+                </div>
+            </div>
+
+            <div class="mt-4 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Speichern</button>
+
+                {% if item.file %}
+                    <a href="{% url 'document_download' item.pk %}"
+                       class="btn btn-outline-primary"
+                       target="_blank"
+                       rel="noopener">
+                        Aktuelle Datei anzeigen
+                    </a>
+                {% endif %}
+
+                <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">
+                    Abbrechen
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

@@ -6,8 +6,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h1 class="h3 mb-1">Dokument hochladen</h1>
-        <p class="text-muted mb-0">Neues Dokument mit Ordner und Labels anlegen</p>
+        <h1 class="h3 mb-1">Dokumente anlegen</h1>
+        <p class="text-muted mb-0">Dokument hochladen oder Mustertext als Dokument übernehmen</p>
     </div>
 
     <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">
@@ -17,8 +17,10 @@
 
 <div class="row g-4">
     <div class="col-12 col-xl-8">
-        <div class="card">
+        <div class="card mb-4">
             <div class="card-body">
+                <h2 class="h5 mb-3">Dokument hochladen</h2>
+
                 <form method="post" enctype="multipart/form-data">
                     {% csrf_token %}
 
@@ -51,7 +53,7 @@
                         <div class="col-md-6">
                             <label for="id_tenant" class="form-label">Mandant</label>
                             <select id="id_tenant" name="tenant" class="form-select">
-                                <option value="">-- Global / keiner --</option>
+                                <option value="">-- aktiven Mandanten verwenden --</option>
                                 {% for t in tenants %}
                                     <option value="{{ t.pk }}">{{ t.name }}</option>
                                 {% endfor %}
@@ -65,6 +67,35 @@
                                 <option value="">-- kein Ordner --</option>
                                 {% for folder in folders %}
                                     <option value="{{ folder.pk }}">{{ folder }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_related_processing_activity" class="form-label">Verfahren</label>
+                            <select id="id_related_processing_activity" name="related_processing_activity" class="form-select">
+                                <option value="">-- kein Verfahren --</option>
+                                {% for item in processing_choices %}
+                                    <option value="{{ item.pk }}">{{ item.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_related_processor" class="form-label">Auftragsverarbeiter</label>
+                            <select id="id_related_processor" name="related_processor" class="form-select">
+                                <option value="">-- kein Auftragsverarbeiter --</option>
+                                {% for item in processor_choices %}
+                                    <option value="{{ item.pk }}">{{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_document_status" class="form-label">Bearbeitungsstatus</label>
+                            <select id="id_document_status" name="document_status" class="form-select">
+                                {% for value, label in document_statuses %}
+                                    <option value="{{ value }}">{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -89,6 +120,113 @@
 
                     <div class="mt-4 d-flex gap-2">
                         <button type="submit" class="btn btn-primary">Hochladen</button>
+                        <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Mustertext als Dokument übernehmen</h2>
+
+                <form method="post" action="{% url 'document_create_from_template' %}">
+                    {% csrf_token %}
+
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label for="id_template_id" class="form-label">Mustertext</label>
+                            <select id="id_template_id" name="template_id" class="form-select" required>
+                                <option value="">-- bitte Mustertext wählen --</option>
+                                {% for template in available_templates %}
+                                    <option value="{{ template.pk }}">
+                                        {{ template.title }}{% if template.folder %} ({{ template.folder.name }}){% endif %}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">
+                                Es werden nur freigegebene Mustertexte angezeigt.
+                            </div>
+                        </div>
+
+                        {% if request.user.is_superuser %}
+                        <div class="col-md-6">
+                            <label for="id_template_tenant" class="form-label">Mandant</label>
+                            <select id="id_template_tenant" name="tenant" class="form-select">
+                                <option value="">-- aktiven Mandanten verwenden --</option>
+                                {% for t in tenants %}
+                                    <option value="{{ t.pk }}">{{ t.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-md-6">
+                            <label for="id_template_document_type" class="form-label">Dokumenttyp</label>
+                            <select id="id_template_document_type" name="document_type" class="form-select">
+                                {% for value, label in document_types %}
+                                    <option value="{{ value }}">{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-8">
+                            <label for="id_template_title" class="form-label">Titel (optional überschreiben)</label>
+                            <input type="text" id="id_template_title" name="title" class="form-control">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="id_template_version" class="form-label">Version</label>
+                            <input type="text" id="id_template_version" name="version" class="form-control">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_template_folder" class="form-label">Ordner</label>
+                            <select id="id_template_folder" name="folder" class="form-select">
+                                <option value="">-- kein Ordner --</option>
+                                {% for folder in folders %}
+                                    <option value="{{ folder.pk }}">{{ folder }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_template_labels" class="form-label">Labels</label>
+                            <select id="id_template_labels" name="labels" class="form-select" multiple size="4">
+                                {% for label in labels %}
+                                    <option value="{{ label.pk }}">{{ label.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_template_related_processing_activity" class="form-label">Verfahren</label>
+                            <select id="id_template_related_processing_activity" name="related_processing_activity" class="form-select">
+                                <option value="">-- kein Verfahren --</option>
+                                {% for item in processing_choices %}
+                                    <option value="{{ item.pk }}">{{ item.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-md-6">
+                            <label for="id_template_related_processor" class="form-label">Auftragsverarbeiter</label>
+                            <select id="id_template_related_processor" name="related_processor" class="form-select">
+                                <option value="">-- kein Auftragsverarbeiter --</option>
+                                {% for item in processor_choices %}
+                                    <option value="{{ item.pk }}">{{ item.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="col-12">
+                            <label for="id_template_description" class="form-label">Beschreibung</label>
+                            <textarea id="id_template_description" name="description" class="form-control" rows="4"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Als Dokument übernehmen</button>
                         <a href="{% url 'document_list' %}" class="btn btn-outline-secondary">Abbrechen</a>
                     </div>
                 </form>

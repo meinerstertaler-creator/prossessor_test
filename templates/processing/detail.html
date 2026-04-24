@@ -11,23 +11,126 @@
     </div>
 
     <div class="d-flex flex-wrap align-items-center gap-2">
-        <a href="{% url 'processing_edit' item.pk %}" class="btn btn-primary">
-            Bearbeiten
-        </a>
-
-        <a href="{% url 'legal_assessment_edit' item.pk %}" class="btn btn-outline-dark">
-            Rechtsbewertung
-        </a>
-
-        <a href="{% url 'dpia:dpia_detail' item.pk %}" class="btn btn-outline-dark">
-            DSFA
-        </a>
-
-        <a href="{% url 'processing_list' %}" class="btn btn-outline-secondary">
-            Zurück zur Liste
-        </a>
+        <a href="{% url 'processing_edit' item.pk %}" class="btn btn-primary">Bearbeiten</a>
+        <a href="{% url 'legal_assessment_edit' item.pk %}" class="btn btn-outline-dark">Rechtsbewertung</a>
+        <a href="{% url 'dpia:dpia_detail' item.pk %}" class="btn btn-outline-dark">DSFA</a>
+        <a href="{% url 'processing_list' %}" class="btn btn-outline-secondary">Zurück zur Liste</a>
     </div>
 </div>
+
+<!-- ===================== DOKUMENTE ===================== -->
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h2 class="h5 mb-3">Verknüpfte Dokumente</h2>
+
+        <!-- FILTER -->
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-md-3">
+                <select name="document_status" class="form-select">
+                    <option value="">Alle Status</option>
+                    {% for value, label in document_status_choices %}
+                        <option value="{{ value }}" {% if document_status == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <select name="document_type" class="form-select">
+                    <option value="">Alle Typen</option>
+                    {% for value, label in document_type_choices %}
+                        <option value="{{ value }}" {% if document_type == value %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <button class="btn btn-primary w-100">Filtern</button>
+            </div>
+
+            <div class="col-md-2">
+                <a href="{% url 'processing_detail' item.pk %}" class="btn btn-outline-secondary w-100">
+                    Reset
+                </a>
+            </div>
+        </form>
+
+        {% if linked_documents %}
+            <div class="table-responsive">
+                <table class="table table-sm table-striped align-middle">
+                    <thead>
+                        <tr>
+                            <th>Titel</th>
+                            <th>Typ</th>
+                            <th>Status</th>
+                            <th>Herkunft</th>
+                            <th>Version</th>
+                            <th>Aktionen</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for doc in linked_documents %}
+                        <tr>
+                            <td>
+                                <strong>{{ doc.title }}</strong>
+
+                                {% if doc.source_text_template %}
+                                    <div class="small text-muted">
+                                        Muster: {{ doc.source_text_template.title }}
+                                    </div>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ doc.get_document_type_display }}</td>
+
+                            <!-- 🔥 HIER IST DIE AMPEL -->
+                            <td>
+                                {% if doc.document_status == "final" %}
+                                    <span class="badge text-bg-success">● Final</span>
+                                {% elif doc.document_status == "in_progress" %}
+                                    <span class="badge text-bg-warning">● In Bearbeitung</span>
+                                {% else %}
+                                    <span class="badge text-bg-secondary">● Unbearbeitet</span>
+                                {% endif %}
+                            </td>
+
+                            <td>{{ doc.get_origin_display }}</td>
+
+                            <td>{{ doc.version|default:"—" }}</td>
+
+                            <td class="d-flex gap-2">
+                                {% if doc.file %}
+                                    <a href="{% url 'document_download' doc.pk %}"
+                                       class="btn btn-sm btn-outline-primary"
+                                       target="_blank"
+                                       rel="noopener">
+                                        Anzeigen
+                                    </a>
+                                {% endif %}
+
+                                <a href="{% url 'document_edit' doc.pk %}"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    Bearbeiten
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-muted">
+                Keine Dokumente mit diesem Verfahren verknüpft.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===================== REST ===================== -->
 
 <div class="row g-4 mb-4">
     <div class="col-12 col-xl-4">
@@ -51,35 +154,6 @@
                         <span class="badge text-bg-{{ item.dpia_status_badge_class }}">
                             {{ item.dpia_status_label }}
                         </span>
-                        {% if item.dpia_status_detail %}
-                            <div class="small text-muted mt-1">
-                                {{ item.dpia_status_detail }}
-                            </div>
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Drittinfos</dt>
-                    <dd class="col-sm-6">
-                        {% if item.third_party_info_required %}
-                            {% if item.third_party_info_requested_at %}
-                                <span class="badge text-bg-warning">Angefragt</span>
-                            {% else %}
-                                <span class="badge text-bg-danger">Offen</span>
-                            {% endif %}
-                        {% else %}
-                            <span class="badge text-bg-success">Erledigt</span>
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Erinnerung</dt>
-                    <dd class="col-sm-6">
-                        {% if item.is_reminder_due %}
-                            <span class="badge text-bg-danger">Fällig</span>
-                        {% elif item.reminder_due_at %}
-                            <span class="badge text-bg-warning">Geplant</span>
-                        {% else %}
-                            <span class="badge text-bg-success">Keine offen</span>
-                        {% endif %}
                     </dd>
 
                     <dt class="col-sm-6">Offene Maßnahmen</dt>
@@ -90,221 +164,10 @@
                             <span class="badge text-bg-danger">{{ open_action_count }}</span>
                         {% endif %}
                     </dd>
-
-                    <dt class="col-sm-6">Gesamtstatus</dt>
-                    <dd class="col-sm-6">
-                        {% if procedure_is_complete %}
-                            <span class="badge text-bg-success">Vollständig</span>
-                        {% else %}
-                            <span class="badge text-bg-danger">Unvollständig</span>
-                        {% endif %}
-                    </dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Grunddaten</h2>
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Interne ID</dt>
-                    <dd class="col-sm-8 text-break">{{ item.internal_id|default:"—" }}</dd>
-
-                    <dt class="col-sm-4">Fachbereich</dt>
-                    <dd class="col-sm-8 text-break">{{ item.department.name|default:"—" }}</dd>
-
-                    <dt class="col-sm-4">Status</dt>
-                    <dd class="col-sm-8">{{ item.get_status_display }}</dd>
-
-                    <dt class="col-sm-4">Verantwortlich</dt>
-                    <dd class="col-sm-8 text-break">{{ item.responsible_person|default:"—" }}</dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-4">
-        <div class="card h-100">
-            <div class="card-body d-flex flex-column">
-                <h2 class="h5">Maßnahmen &amp; Status</h2>
-
-                {% if open_actions %}
-                    <p class="text-muted mb-2">Aktuell offene Maßnahmen zu diesem Verfahren:</p>
-
-                    <div class="border rounded p-2 flex-grow-1 overflow-auto" style="max-height: 260px;">
-                        <ul class="list-unstyled mb-0">
-                            {% for action in open_actions %}
-                                <li class="mb-3 pb-2 border-bottom">
-                                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                                        {% if action.priority == "high" %}
-                                            <span class="badge text-bg-danger">Hoch</span>
-                                        {% elif action.priority == "medium" %}
-                                            <span class="badge text-bg-warning">Mittel</span>
-                                        {% else %}
-                                            <span class="badge text-bg-secondary">Niedrig</span>
-                                        {% endif %}
-
-                                        {% if action.due_date %}
-                                            <span class="badge text-bg-light">Frist: {{ action.due_date|date:"d.m.Y" }}</span>
-                                        {% endif %}
-                                    </div>
-
-                                    <div class="fw-semibold">{{ action.title }}</div>
-
-                                    {% if action.description %}
-                                        <div class="small text-muted mt-1">{{ action.description }}</div>
-                                    {% endif %}
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                {% else %}
-                    <div class="alert alert-success mb-3">
-                        <strong>Keine aktuellen Maßnahmen.</strong><br>
-                        Verfahren ist aktuell vollständig geprüft.
-                    </div>
-
-                    {% if procedure_is_complete %}
-                        <p class="mb-0">
-                            <strong>Nächste Prüfung empfohlen in:</strong> 12 Monaten
-                        </p>
-                    {% endif %}
-                {% endif %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-12 col-xl-6">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Bewertung und Prüfung</h2>
-                <dl class="row mb-0">
-                    <dt class="col-sm-6">Bewertung begonnen am</dt>
-                    <dd class="col-sm-6">
-                        {% if item.review_started_at %}
-                            {{ item.review_started_at|date:"d.m.Y H:i" }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Bewertung abgeschlossen am</dt>
-                    <dd class="col-sm-6">
-                        {% if item.review_completed_at %}
-                            {{ item.review_completed_at|date:"d.m.Y H:i" }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Erinnerung fällig am</dt>
-                    <dd class="col-sm-6">
-                        {% if item.reminder_due_at %}
-                            {% if item.is_reminder_due %}
-                                <span class="badge text-bg-danger">Fällig</span>
-                                <div class="small text-muted mt-1">
-                                    {{ item.reminder_due_at|date:"d.m.Y H:i" }}
-                                </div>
-                            {% else %}
-                                {{ item.reminder_due_at|date:"d.m.Y H:i" }}
-                            {% endif %}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Drittinformationen erforderlich</dt>
-                    <dd class="col-sm-6">
-                        {% if item.third_party_info_required %}Ja{% else %}Nein{% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Drittinformationen angefordert am</dt>
-                    <dd class="col-sm-6">
-                        {% if item.third_party_info_requested_at %}
-                            {{ item.third_party_info_requested_at|date:"d.m.Y H:i" }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </dd>
-
-                    <dt class="col-sm-6">Ansprechpartner</dt>
-                    <dd class="col-sm-6 text-break">{{ item.contact_person|default:"—" }}</dd>
-
-                    <dt class="col-sm-6">E-Mail Ansprechpartner</dt>
-                    <dd class="col-sm-6 text-break">
-                        {% if item.contact_email %}
-                            <a href="mailto:{{ item.contact_email }}">{{ item.contact_email }}</a>
-                        {% else %}
-                            —
-                        {% endif %}
-                    </dd>
-                </dl>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-xl-6">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">System und Dokumentation</h2>
-                <dl class="row mb-0">
-                    <dt class="col-sm-4">Erstellt am</dt>
-                    <dd class="col-sm-8">{{ item.created_at|date:"d.m.Y H:i" }}</dd>
-
-                    <dt class="col-sm-4">Aktualisiert am</dt>
-                    <dd class="col-sm-8">{{ item.updated_at|date:"d.m.Y H:i" }}</dd>
-
-                    <dt class="col-sm-4">Erstellt von</dt>
-                    <dd class="col-sm-8 text-break">{{ item.created_by|default:"—" }}</dd>
-
-                    <dt class="col-sm-4">Aktualisiert von</dt>
-                    <dd class="col-sm-8 text-break">{{ item.updated_by|default:"—" }}</dd>
                 </dl>
             </div>
         </div>
     </div>
 </div>
 
-<div class="col-12">
-    <div class="card">
-        <div class="card-body">
-            <h2 class="h5">Zweck</h2>
-            <div class="text-break">{{ item.purpose|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Beschreibung</h2>
-            <div class="text-break">{{ item.description|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Betroffene Personen</h2>
-            <div class="text-break">{{ item.data_subject_categories|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Datenkategorien</h2>
-            <div class="text-break">{{ item.personal_data_categories|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Besondere Kategorien</h2>
-            <div class="text-break">{{ item.special_category_description|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Systeme</h2>
-            <div class="text-break">{{ item.systems_used|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Empfänger</h2>
-            <div class="text-break">{{ item.recipients|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Drittlandtransfer</h2>
-            <div class="text-break">{{ item.third_country_description|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Löschfrist</h2>
-            <div class="text-break">{{ item.retention_period|default:"—" }}</div>
-
-            <h2 class="h5 mt-4">TOM-Kurzbeschreibung</h2>
-            <div class="text-break">{{ item.tom_summary|default:"—"|linebreaks }}</div>
-
-            <h2 class="h5 mt-4">Bemerkungen</h2>
-            <div class="text-break">{{ item.notes|default:"—"|linebreaks }}</div>
-        </div>
-    </div>
-</div>
 {% endblock %}

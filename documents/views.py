@@ -1,11 +1,16 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core.files.base import ContentFile
 from django.db.models import Q
 from django.http import FileResponse, Http404
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.text import slugify
 
 from accounts.models import Tenant
 from core.tenant_utils import get_effective_tenant
+from knowledge.models import TextTemplate
+from processing.models import ProcessingActivity
+from processors.models import Processor
 
 from .models import Document, DocumentFolder, DocumentLabel
 
@@ -20,6 +25,7 @@ def _get_permitted_documents(request):
         "related_audit",
         "related_action_item",
         "uploaded_by",
+        "source_text_template",
     ).prefetch_related("labels")
 
     if not request.user.is_superuser:
@@ -100,11 +106,48 @@ def _get_available_labels_for_request(request):
     return DocumentLabel.objects.none()
 
 
+def _get_available_processing_for_request(request):
+    if request.user.is_superuser:
+        active_tenant = get_effective_tenant(request)
+        if active_tenant is not None:
+            return ProcessingActivity.objects.filter(tenant=active_tenant).order_by("title")
+        return ProcessingActivity.objects.select_related("tenant").order_by("tenant__name", "title")
+
+    if request.user.tenant_id:
+        return ProcessingActivity.objects.filter(tenant=request.user.tenant).order_by("title")
+
+    return ProcessingActivity.objects.none()
+
+
+def _get_available_processors_for_request(request):
+    if request.user.is_superuser:
+        active_tenant = get_effective_tenant(request)
+        if active_tenant is not None:
+            return Processor.objects.filter(tenant=active_tenant).order_by("name")
+        return Processor.objects.select_related("tenant").order_by("tenant__name", "name")
+
+    if request.user.tenant_id:
+        return Processor.objects.filter(tenant=request.user.tenant).order_by("name")
+
+    return Processor.objects.none()
+
+
+def _get_available_templates_for_request(request):
+    return TextTemplate.objects.filter(
+        is_active=True,
+        admin_only=False,
+    ).select_related("folder").order_by("category", "title")
+
+
 def _build_upload_context(request, extra=None):
     context = {
         "document_types": Document.DocumentType.choices,
+        "document_statuses": Document.DocumentStatus.choices,
         "folders": _get_available_folders_for_request(request),
         "labels": _get_available_labels_for_request(request),
+        "processing_choices": _get_available_processing_for_request(request),
+        "processor_choices": _get_available_processors_for_request(request),
+        "available_templates": _get_available_templates_for_request(request),
     }
 
     if request.user.is_superuser:
@@ -179,6 +222,59 @@ def document_download(request, pk):
 
 
 @login_required
+def document_edit(request, pk):
+    item = get_object_or_404(_get_permitted_documents(request), pk=pk)
+
+    if request.method == "POST":
+        item.title = (request.POST.get("title") or "").strip() or item.title
+        item.version = (request.POST.get("version") or "").strip()
+        item.description = (request.POST.get("description") or "").strip() or "N/A"
+
+        document_status = (request.POST.get("document_status") or "").strip()
+        if document_status in dict(Document.DocumentStatus.choices):
+            item.document_status = document_status
+
+        new_file = request.FILES.get("file")
+        if new_file:
+            item.file = new_file
+
+        processing_id = (request.POST.get("related_processing_activity") or "").strip()
+        if processing_id:
+            try:
+                item.related_processing_activity = _get_available_processing_for_request(request).get(pk=processing_id)
+            except ProcessingActivity.DoesNotExist:
+                messages.error(request, "Das gewählte Verfahren ist nicht zulässig.")
+                return redirect("document_edit", pk=item.pk)
+        else:
+            item.related_processing_activity = None
+
+        processor_id = (request.POST.get("related_processor") or "").strip()
+        if processor_id:
+            try:
+                item.related_processor = _get_available_processors_for_request(request).get(pk=processor_id)
+            except Processor.DoesNotExist:
+                messages.error(request, "Der gewählte Auftragsverarbeiter ist nicht zulässig.")
+                return redirect("document_edit", pk=item.pk)
+        else:
+            item.related_processor = None
+
+        item.save()
+        messages.success(request, "Dokument wurde aktualisiert.")
+        return redirect("document_list")
+
+    return render(
+        request,
+        "documents/edit.html",
+        _build_upload_context(
+            request,
+            {
+                "item": item,
+            },
+        ),
+    )
+
+
+@login_required
 def document_upload(request):
     if request.method == "POST":
         title = (request.POST.get("title") or "").strip()
@@ -189,6 +285,9 @@ def document_upload(request):
         folder_id = (request.POST.get("folder") or "").strip()
         label_ids = request.POST.getlist("labels")
         posted_tenant_id = (request.POST.get("tenant") or "").strip()
+        processing_id = (request.POST.get("related_processing_activity") or "").strip()
+        processor_id = (request.POST.get("related_processor") or "").strip()
+        document_status = (request.POST.get("document_status") or "").strip() or Document.DocumentStatus.UNEDITED
 
         if not title or not document_type or not file:
             messages.error(request, "Bitte alle Pflichtfelder ausfüllen.")
@@ -201,6 +300,8 @@ def document_upload(request):
             version=version,
             description=description,
             uploaded_by=request.user,
+            origin=Document.DocumentOrigin.UPLOAD,
+            document_status=document_status,
         )
 
         effective_tenant = _get_effective_document_tenant_for_request(request, posted_tenant_id)
@@ -222,6 +323,20 @@ def document_upload(request):
                 messages.error(request, "Der gewählte Ordner ist nicht zulässig.")
                 return redirect("document_upload")
 
+        if processing_id:
+            try:
+                document.related_processing_activity = _get_available_processing_for_request(request).get(pk=processing_id)
+            except ProcessingActivity.DoesNotExist:
+                messages.error(request, "Das gewählte Verfahren ist nicht zulässig.")
+                return redirect("document_upload")
+
+        if processor_id:
+            try:
+                document.related_processor = _get_available_processors_for_request(request).get(pk=processor_id)
+            except Processor.DoesNotExist:
+                messages.error(request, "Der gewählte Auftragsverarbeiter ist nicht zulässig.")
+                return redirect("document_upload")
+
         try:
             document.save()
         except Exception as exc:
@@ -236,6 +351,101 @@ def document_upload(request):
         return redirect("document_list")
 
     return render(request, "documents/upload.html", _build_upload_context(request))
+
+
+@login_required
+def document_create_from_template(request):
+    if request.method != "POST":
+        return redirect("document_upload")
+
+    template_id = (request.POST.get("template_id") or "").strip()
+    posted_tenant_id = (request.POST.get("tenant") or "").strip()
+    title = (request.POST.get("title") or "").strip()
+    version = (request.POST.get("version") or "").strip()
+    description = (request.POST.get("description") or "").strip()
+    document_type = (request.POST.get("document_type") or "").strip() or Document.DocumentType.GENERAL
+    folder_id = (request.POST.get("folder") or "").strip()
+    label_ids = request.POST.getlist("labels")
+    processing_id = (request.POST.get("related_processing_activity") or "").strip()
+    processor_id = (request.POST.get("related_processor") or "").strip()
+
+    if not template_id:
+        messages.error(request, "Bitte einen Mustertext auswählen.")
+        return redirect("document_upload")
+
+    effective_tenant = _get_effective_document_tenant_for_request(request, posted_tenant_id)
+    if effective_tenant is None:
+        messages.error(request, "Bitte einen gültigen Mandanten auswählen oder einen aktiven Mandanten setzen.")
+        return redirect("document_upload")
+
+    try:
+        template = _get_available_templates_for_request(request).get(pk=template_id)
+    except TextTemplate.DoesNotExist:
+        messages.error(request, "Der gewählte Mustertext ist nicht verfügbar.")
+        return redirect("document_upload")
+
+    final_title = title or template.title
+    final_version = version or template.version
+    final_description = description or template.description or "Aus Mustertext übernommen."
+
+    document = Document(
+        tenant=effective_tenant,
+        title=final_title,
+        document_type=document_type,
+        version=final_version,
+        description=final_description,
+        uploaded_by=request.user,
+        origin=Document.DocumentOrigin.TEMPLATE_COPY,
+        document_status=Document.DocumentStatus.UNEDITED,
+        source_text_template=template,
+    )
+
+    if folder_id:
+        try:
+            folder = _get_available_folders_for_request(request).get(pk=folder_id)
+            document.folder = folder
+        except DocumentFolder.DoesNotExist:
+            messages.error(request, "Der gewählte Ordner ist nicht zulässig.")
+            return redirect("document_upload")
+
+    if processing_id:
+        try:
+            document.related_processing_activity = _get_available_processing_for_request(request).get(pk=processing_id)
+        except ProcessingActivity.DoesNotExist:
+            messages.error(request, "Das gewählte Verfahren ist nicht zulässig.")
+            return redirect("document_upload")
+
+    if processor_id:
+        try:
+            document.related_processor = _get_available_processors_for_request(request).get(pk=processor_id)
+        except Processor.DoesNotExist:
+            messages.error(request, "Der gewählte Auftragsverarbeiter ist nicht zulässig.")
+            return redirect("document_upload")
+
+    try:
+        if template.file:
+            template.file.open("rb")
+            try:
+                filename = template.file.name.split("/")[-1]
+                document.file.save(filename, ContentFile(template.file.read()), save=False)
+            finally:
+                template.file.close()
+        else:
+            text_content = template.template_text or template.description or template.title
+            filename = f"{slugify(final_title) or 'mustertext'}.txt"
+            document.file.save(filename, ContentFile(text_content.encode("utf-8")), save=False)
+
+        document.save()
+    except Exception as exc:
+        messages.error(request, f"Fehler beim Übernehmen des Mustertexts: {exc}")
+        return redirect("document_upload")
+
+    if label_ids:
+        valid_labels = _get_available_labels_for_request(request).filter(pk__in=label_ids)
+        document.labels.set(valid_labels)
+
+    messages.success(request, "Mustertext wurde als Dokument übernommen.")
+    return redirect("document_list")
 
 
 @login_required

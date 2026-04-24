@@ -6,6 +6,7 @@ from django.utils import timezone
 
 from actions.models import ActionItem
 from core.tenant_utils import get_effective_tenant
+from documents.models import Document
 from .forms import ProcessingActivityForm
 from .models import Department, ProcessingActivity
 from .services import (
@@ -183,6 +184,16 @@ def _enrich_processing_item_with_dpia_display(item):
     item.dpia_status_badge_class = "secondary"
     item.dpia_status_detail = "Es liegt noch keine dokumentierte DSFA-Prüfung vor."
     return item
+
+
+def _document_status_badge_class(status):
+    if status == Document.DocumentStatus.FINAL:
+        return "success"
+
+    if status == Document.DocumentStatus.IN_PROGRESS:
+        return "warning"
+
+    return "secondary"
 
 
 @login_required
@@ -379,6 +390,25 @@ def processing_detail(request, pk):
         and not item.third_party_info_required
     )
 
+    document_status = request.GET.get("document_status", "").strip()
+    document_type = request.GET.get("document_type", "").strip()
+
+    linked_documents = item.documents.select_related(
+        "source_text_template",
+        "related_processor",
+        "folder",
+    ).order_by("-updated_at", "title")
+
+    if document_status:
+        linked_documents = linked_documents.filter(document_status=document_status)
+
+    if document_type:
+        linked_documents = linked_documents.filter(document_type=document_type)
+
+    linked_documents = list(linked_documents)
+    for document in linked_documents:
+        document.status_badge_class = _document_status_badge_class(document.document_status)
+
     return render(
         request,
         "processing/detail.html",
@@ -389,6 +419,11 @@ def processing_detail(request, pk):
             "review_completed": review_completed,
             "review_in_progress": review_in_progress,
             "procedure_is_complete": procedure_is_complete,
+            "linked_documents": linked_documents,
+            "document_status": document_status,
+            "document_type": document_type,
+            "document_status_choices": Document.DocumentStatus.choices,
+            "document_type_choices": Document.DocumentType.choices,
         },
     )
 
