@@ -43,6 +43,14 @@
                     <label class="form-label mt-3">Art. 9 DSGVO</label>
                     {{ form.special_legal_basis }}
 
+                    {% if processing_activity.special_category_data and not legal_assessment.special_legal_basis %}
+                        <div class="alert alert-warning mt-2 mb-0">
+                            Im Verfahren sind besondere Kategorien personenbezogener Daten markiert.
+                            Bitte ergänze hier eine Rechtsgrundlage nach Art. 9 DSGVO oder prüfe im Verfahren,
+                            ob die Markierung „besondere Kategorien“ korrekt ist.
+                        </div>
+                    {% endif %}
+
                     <div class="form-check mt-3">
                         {{ form.professional_secrecy }}
                         <label class="form-check-label">

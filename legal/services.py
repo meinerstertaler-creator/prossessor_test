@@ -240,13 +240,17 @@ def generate_legal_assessment_actions(assessment):
         if updated:
             result["updated_count"] += 1
 
-    if not _is_blank_text(assessment.open_issues):
+    if (
+        not _is_blank_text(assessment.open_issues)
+        and (assessment.open_issues or "").strip().lower() not in {"n/a", "na"}
+    ):
         _, created, updated = ensure_action_exists(
             assessment=assessment,
             title="Offene Rechtsfragen klären",
             description=(
                 "In der Rechtsbewertung wurden offene Rechtsfragen oder Klärungspunkte dokumentiert. "
-                "Diese sollten geprüft und bearbeitet werden.\n\n"
+                "Diese sollten geprüft und bearbeitet werden. Wenn keine offenen Punkte bestehen, "
+                "bitte das Feld leer lassen oder mit 'N/A' dokumentieren.\n\n"
                 f"Offene Punkte:\n{assessment.open_issues}"
             ),
             priority=ActionItem.Priority.MEDIUM,
@@ -362,7 +366,10 @@ def close_resolved_legal_assessment_actions(assessment):
             "DSFA durchführen",
         )
 
-    if not _is_blank_text(assessment.open_issues):
+    if (
+        _is_blank_text(assessment.open_issues)
+        or (assessment.open_issues or "").strip().lower() in {"n/a", "na"}
+    ):
         _close_action_if_exists(
             assessment,
             "Offene Rechtsfragen klären",
