@@ -240,7 +240,7 @@ def generate_legal_assessment_actions(assessment):
         if updated:
             result["updated_count"] += 1
 
-    if assessment.open_issues:
+    if not _is_blank_text(assessment.open_issues):
         _, created, updated = ensure_action_exists(
             assessment=assessment,
             title="Offene Rechtsfragen klären",
@@ -362,7 +362,7 @@ def close_resolved_legal_assessment_actions(assessment):
             "DSFA durchführen",
         )
 
-    if not (assessment.open_issues or "").strip():
+    if not _is_blank_text(assessment.open_issues):
         _close_action_if_exists(
             assessment,
             "Offene Rechtsfragen klären",
