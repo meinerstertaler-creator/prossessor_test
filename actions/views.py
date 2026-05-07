@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Case, IntegerField, Value, When
+from django.db.models import Case, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 
 from core.tenant_utils import get_effective_tenant
 from legal.models import LegalAssessment
+from processing.models import ProcessingActivity
 
 from .forms import ActionItemForm
 from .models import ActionItem
@@ -51,6 +52,15 @@ def _apply_sorting(qs, request):
     if sort == "priority":
         return qs.order_by("status_group_sort", "priority_sort", "-created_at")
 
+    if sort == "processing":
+        return qs.order_by(
+            "status_group_sort",
+            "related_processing_activity__title",
+            "priority_sort",
+            "-updated_at",
+            "-created_at",
+        )
+
     if sort == "status_open_priority":
         return qs.order_by("status_group_sort", "priority_sort", "-updated_at", "-created_at")
 
@@ -80,7 +90,7 @@ def _tenant_filtered_action_queryset(request):
         else:
             qs = qs.none()
 
-    return _apply_sorting(qs, request)
+    return qs
 
 
 def _resolve_action_target_area(item):
@@ -126,7 +136,6 @@ def _get_processing_pk_for_action(item):
 def _get_action_button_label(item):
     target_area = _resolve_action_target_area(item)
 
-    # 1. Neue Verfahren aus Audit, aber noch kein echtes Verfahren angelegt
     if (
         item.related_procedure_audit
         and not item.related_processing_activity
@@ -134,11 +143,9 @@ def _get_action_button_label(item):
     ):
         return "Neues Verfahren prüfen"
 
-    # 2. Auditmaßnahmen bleiben Auditmaßnahmen
     if target_area == ActionItem.Area.AUDIT:
         return "Audit bearbeiten"
 
-    # 3. Fachliche Folgemaßnahmen
     if target_area == ActionItem.Area.PROCESSING:
         return "Verfahren prüfen"
 
@@ -221,14 +228,26 @@ def _build_context_hint(item):
     elif item.related_processing_activity:
         hints.append(f"Verfahren: {item.related_processing_activity.title}")
 
+    elif item.related_legal_assessment and item.related_legal_assessment.processing_activity_id:
+        hints.append(f"Verfahren: {item.related_legal_assessment.processing_activity.title}")
+
     return " | ".join(hints)
 
 
 @login_required
 def action_list(request):
     show_history = request.GET.get("show_history") == "1"
+    processing_id = request.GET.get("processing_id", "").strip()
+    selected_processing = None
 
     qs = _tenant_filtered_action_queryset(request)
+
+    if processing_id:
+        selected_processing = get_object_or_404(ProcessingActivity, pk=processing_id)
+        qs = qs.filter(
+            Q(related_processing_activity_id=processing_id)
+            | Q(related_legal_assessment__processing_activity_id=processing_id)
+        )
 
     if not show_history:
         qs = qs.filter(
@@ -240,6 +259,7 @@ def action_list(request):
             ]
         )
 
+    qs = _apply_sorting(qs, request)
     items = list(qs)
 
     for item in items:
@@ -260,6 +280,8 @@ def action_list(request):
             "items": items,
             "current_sort": request.GET.get("sort", "status_open_priority"),
             "show_history": show_history,
+            "processing_id": processing_id,
+            "selected_processing": selected_processing,
         },
     )
 
@@ -308,7 +330,6 @@ def action_edit(request, pk):
     item = get_object_or_404(_tenant_filtered_action_queryset(request), pk=pk)
     target_area = _resolve_action_target_area(item)
 
-    # 1. Auditmaßnahmen bleiben im Audit
     if target_area == ActionItem.Area.AUDIT:
         if item.related_procedure_audit:
             return redirect("procedure_audit_detail", pk=item.related_procedure_audit.pk)
@@ -317,8 +338,6 @@ def action_edit(request, pk):
 
     processing_pk = _get_processing_pk_for_action(item)
 
-    # 2. Neue Verfahren aus Audit, aber noch kein echtes Verfahren vorhanden:
-    # vorerst im Auditkontext bleiben, bis die Anlage-Logik gebaut ist
     if (
         item.related_procedure_audit
         and not item.related_processing_activity
@@ -326,7 +345,6 @@ def action_edit(request, pk):
     ):
         return redirect("procedure_audit_detail", pk=item.related_procedure_audit.pk)
 
-    # 3. Fachliche Folgemaßnahmen
     if target_area == ActionItem.Area.PROCESSING and processing_pk:
         return redirect("processing_edit", pk=processing_pk)
 

@@ -87,7 +87,6 @@
 
                             <td>{{ doc.get_document_type_display }}</td>
 
-                            <!-- 🔥 HIER IST DIE AMPEL -->
                             <td>
                                 {% if doc.document_status == "final" %}
                                     <span class="badge text-bg-success">● Final</span>
@@ -159,9 +158,17 @@
                     <dt class="col-sm-6">Offene Maßnahmen</dt>
                     <dd class="col-sm-6">
                         {% if open_action_count == 0 %}
-                            <span class="badge text-bg-success">0</span>
+                            <a href="{% url 'action_list' %}?processing_id={{ item.pk }}"
+                               class="text-decoration-none"
+                               title="Maßnahmen zu diesem Verfahren öffnen">
+                                <span class="badge text-bg-success">0</span>
+                            </a>
                         {% else %}
-                            <span class="badge text-bg-danger">{{ open_action_count }}</span>
+                            <a href="{% url 'action_list' %}?processing_id={{ item.pk }}"
+                               class="text-decoration-none"
+                               title="Offene Maßnahmen zu diesem Verfahren öffnen">
+                                <span class="badge text-bg-danger">{{ open_action_count }}</span>
+                            </a>
                         {% endif %}
                     </dd>
                 </dl>

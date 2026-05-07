@@ -71,6 +71,9 @@
     <div class="d-flex flex-wrap align-items-center gap-2">
         <form method="get" class="mb-0">
             <input type="hidden" name="sort" value="{{ current_sort }}">
+            {% if processing_id %}
+                <input type="hidden" name="processing_id" value="{{ processing_id }}">
+            {% endif %}
 
             {% if show_history %}
                 <button type="submit"
@@ -90,6 +93,9 @@
             {% if show_history %}
                 <input type="hidden" name="show_history" value="1">
             {% endif %}
+            {% if processing_id %}
+                <input type="hidden" name="processing_id" value="{{ processing_id }}">
+            {% endif %}
 
             <label for="sort" class="form-label mb-0">Sortierung</label>
             <select
@@ -101,6 +107,9 @@
             >
                 <option value="status_open_priority" {% if current_sort == "status_open_priority" %}selected{% endif %}>
                     Offen zuerst / Priorität
+                </option>
+                <option value="processing" {% if current_sort == "processing" %}selected{% endif %}>
+                    Nach Verfahren
                 </option>
                 <option value="created_desc" {% if current_sort == "created_desc" %}selected{% endif %}>
                     Neueste zuerst
@@ -123,6 +132,23 @@
         <a href="{% url 'action_create' %}" class="btn btn-primary">Neue Maßnahme</a>
     </div>
 </div>
+
+{% if selected_processing %}
+    <div class="alert alert-info d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>
+            Gefiltert auf Verfahren:
+            <strong>{{ selected_processing.title }}</strong>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'processing_detail' selected_processing.pk %}" class="btn btn-sm btn-outline-primary">
+                Zum Verfahren
+            </a>
+            <a href="{% url 'action_list' %}" class="btn btn-sm btn-outline-secondary">
+                Filter entfernen
+            </a>
+        </div>
+    </div>
+{% endif %}
 
 <div class="card">
     <div class="card-body p-0">
@@ -218,7 +244,7 @@
             </div>
         {% else %}
             <div class="p-3">
-                <p class="mb-0">Es sind noch keine Maßnahmen vorhanden.</p>
+                <p class="mb-0">Es sind keine passenden Maßnahmen vorhanden.</p>
             </div>
         {% endif %}
     </div>
