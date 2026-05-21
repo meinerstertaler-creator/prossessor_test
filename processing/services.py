@@ -6,6 +6,11 @@ def _is_blank_text(value):
     return not (value or "").strip()
 
 
+def _has_legal_no_dpia_override(processing_activity):
+    legal_record = getattr(processing_activity, "legal_record", None)
+    return bool(legal_record and legal_record.no_dpia_check_required_reason)
+
+
 def _reopen_processing_actions(processing_activity):
     ActionItem.objects.filter(
         source_type=ActionItem.SourceType.PROCESSING,
@@ -295,7 +300,11 @@ def generate_processing_actions(processing_activity):
             result["updated_count"] += 1
             result["updated_titles"].append(action.title)
 
-    if processing_activity.dpia_required and not processing_activity.dpia_completed:
+    if (
+        processing_activity.dpia_required
+        and not processing_activity.dpia_completed
+        and not _has_legal_no_dpia_override(processing_activity)
+    ):
         action, created, updated = ensure_processing_action_exists(
             processing_activity=processing_activity,
             title='DSFA-Status prüfen und Feld "DSFA durchgeführt" setzen',
@@ -415,7 +424,11 @@ def close_resolved_processing_actions(processing_activity):
             'Feld "Technische und organisatorische Maßnahmen (TOM)" ausfüllen',
         )
 
-    if not processing_activity.dpia_required or processing_activity.dpia_completed:
+    if (
+        not processing_activity.dpia_required
+        or processing_activity.dpia_completed
+        or _has_legal_no_dpia_override(processing_activity)
+    ):
         _close_processing_action_if_exists(
             processing_activity,
             'DSFA-Status prüfen und Feld "DSFA durchgeführt" setzen',

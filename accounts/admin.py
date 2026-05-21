@@ -159,12 +159,32 @@ class RoleAdmin(admin.ModelAdmin):
     list_display = ("name", "is_active")
     search_fields = ("name",)
 
-
 @admin.register(User)
 class UserAdmin(DjangoUserAdmin):
-    list_display = ("username", "email", "tenant", "role", "is_staff", "is_active")
-    list_filter = ("tenant", "role", "is_staff", "is_superuser", "is_active", "groups")
-    search_fields = ("username", "email", "first_name", "last_name")
+    list_display = (
+        "username",
+        "email",
+        "tenant",
+        "role",
+        "is_staff",
+        "is_active",
+    )
+
+    list_filter = (
+        "tenant",
+        "role",
+        "is_staff",
+        "is_superuser",
+        "is_active",
+        "groups",
+    )
+
+    search_fields = (
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+    )
 
     fieldsets = DjangoUserAdmin.fieldsets + (
         (
@@ -184,6 +204,15 @@ class UserAdmin(DjangoUserAdmin):
         ),
     )
 
+    def get_changeform_initial_data(self, request):
+        initial = super().get_changeform_initial_data(request)
+
+        # Sichere Voreinstellung für Mandantenzugänge
+        initial["is_staff"] = False
+        initial["is_superuser"] = False
+        initial["is_active"] = True
+
+        return initial
 
 @admin.register(CompanyProfile)
 class CompanyProfileAdmin(admin.ModelAdmin):

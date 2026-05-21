@@ -95,7 +95,13 @@ class DPIACheck(models.Model):
         if self.must_list_case:
             return "mandatory"
 
-        # 2. Noch nichts dokumentiert / geprüft
+        # 2. Abgeschlossene dokumentierte Prüfung ohne Muss-Listen-Fall.
+        # Besondere Kategorien oder sonstige Risikosignale führen dann nicht mehr automatisch
+        # zu "DSFA erforderlich", sondern gelten als durch die Prüfung bewertet.
+        if self.completed:
+            return "not_required"
+
+        # 3. Noch nichts dokumentiert / geprüft
         has_any_signal = any(
             [
                 bool(standard_case),
@@ -137,12 +143,12 @@ class DPIACheck(models.Model):
         if not has_any_signal and not text_has_high_risk_terms:
             return "not_checked"
 
-        # 3. Standardfall aus Verfahren = Vorstrukturierung
-        # Mittel/Hoch soll mindestens "empfohlen" ergeben, solange keine Gegenentscheidung
+        # 4. Standardfall aus Verfahren = Vorstrukturierung
+        # Mittel/Hoch soll mindestens "empfohlen" ergeben, solange keine dokumentierte Gegenentscheidung vorliegt.
         if standard_risk_hint in {"high", "medium"}:
             return "recommended"
 
-        # 4. Verfahrensbezogene Auffanglogik
+        # 5. Verfahrensbezogene Auffanglogik
         score = 0
 
         if pa.special_category_data:
@@ -167,8 +173,8 @@ class DPIACheck(models.Model):
         if score >= 2:
             return "recommended"
 
-        # 5. "Nicht erforderlich" nur bei tatsächlich dokumentierter / abgeschlossener Prüfung
-        if self.completed or self._has_manual_input:
+        # 6. "Nicht erforderlich" nur bei tatsächlich dokumentierter Prüfung / manuellem Input
+        if self._has_manual_input:
             return "not_required"
 
         return "not_checked"
@@ -210,6 +216,9 @@ class DPIACheck(models.Model):
 
         if pa.third_country_transfer:
             reasons.append("Ein Drittlandtransfer ist dokumentiert.")
+
+        if self.completed and not self.must_list_case:
+            reasons.append("Die DSFA-Prüfung wurde abgeschlossen; eine DSFA wurde nicht als erforderlich dokumentiert.")
 
         if self.recommendation == "not_checked" and not reasons:
             return "Es liegt noch keine dokumentierte DSFA-Prüfung oder Risikoeinstufung vor."

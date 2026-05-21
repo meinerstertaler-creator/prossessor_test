@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from processing.models import ProcessingActivity
+from processing.services import close_resolved_processing_actions
 from .forms import DPIAForm, DPIACheckForm, DPIARiskForm, DPIAMeasureForm
 from .models import DPIA, DPIACheck, DPIARisk, DPIAMeasure
 from .services import close_resolved_dpia_actions, generate_dpia_actions
@@ -31,6 +32,7 @@ def dpia_detail(request, processing_id):
                 request,
                 "Die DSFA-Prüfung ist gesperrt, weil in der Rechtsbewertung bereits dokumentiert wurde, dass kein DSFA-Check erforderlich ist."
             )
+            close_resolved_processing_actions(processing_activity)
             return redirect("dpia:dpia_detail", processing_id=processing_activity.pk)
 
         if action == "save_check":
@@ -51,6 +53,7 @@ def dpia_detail(request, processing_id):
                     dpia_check=dpia_check,
                     dpia=dpia,
                 )
+                close_resolved_processing_actions(processing_activity)
 
                 messages.success(request, "Die DSFA-Prüfung wurde gespeichert.")
 
@@ -95,6 +98,7 @@ def dpia_detail(request, processing_id):
                     dpia_check=dpia_check,
                     dpia=dpia,
                 )
+                close_resolved_processing_actions(processing_activity)
 
                 messages.success(request, "Automatische Empfehlung wurde erzeugt.")
 
@@ -132,6 +136,7 @@ def dpia_detail(request, processing_id):
                     dpia_check=dpia_check,
                     dpia=dpia,
                 )
+                close_resolved_processing_actions(processing_activity)
 
                 messages.success(request, "Die DSFA wurde gespeichert.")
 
@@ -169,6 +174,7 @@ def dpia_detail(request, processing_id):
                     dpia_check=dpia_check,
                     dpia=dpia,
                 )
+                close_resolved_processing_actions(processing_activity)
 
                 messages.success(request, "Die DSFA wurde gespeichert.")
 

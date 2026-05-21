@@ -6,6 +6,7 @@ from actions.models import ActionItem
 from dpia.models import DPIA, DPIACheck
 from dpia.services import close_resolved_dpia_actions, generate_dpia_actions
 from processing.models import ProcessingActivity
+from processing.services import close_resolved_processing_actions
 
 from .forms import LegalAssessmentForm
 from .models import LegalAssessment
@@ -100,7 +101,7 @@ def legal_assessment_upsert(request, processing_id):
                     "legal/legal_assessment_form.html",
                     {
                         "processing_activity": processing_activity,
-                        "legal_assessment": legal_assessment,
+                        "legal_assessment": assessment,
                         "dpia_check": dpia_check,
                         "form": form,
                         "is_new": created,
@@ -175,6 +176,7 @@ def legal_assessment_upsert(request, processing_id):
                         dpia_check=dpia_check,
                         dpia=dpia,
                     )
+                    close_resolved_processing_actions(processing_activity)
 
                     messages.success(request, "Der KI-Vorschlag wurde erzeugt.")
 
@@ -220,6 +222,7 @@ def legal_assessment_upsert(request, processing_id):
                 dpia_check=dpia_check,
                 dpia=dpia,
             )
+            close_resolved_processing_actions(processing_activity)
 
             messages.success(request, "Die Rechtsbewertung wurde gespeichert.")
 

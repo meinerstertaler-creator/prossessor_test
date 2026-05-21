@@ -27,13 +27,13 @@
 
 <div class="row g-4 mb-3">
     <div class="col-12">
-        <div class="card border-warning">
+        <div class="card border-{{ dpia_check.recommendation_badge_class }}">
             <div class="card-body">
                 <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
                     <div>
                         <h2 class="h5 mb-1">DSFA-Prüfung</h2>
                         <div class="small text-muted">
-                            Prüfung, ob eine DSFA erforderlich, empfohlen oder nicht geprüft ist.
+                            Prüfung, ob eine DSFA erforderlich, empfohlen oder nicht erforderlich ist.
                         </div>
                     </div>
                     <a href="{% url 'legal_assessment_edit' processing_activity.pk %}" class="btn btn-outline-dark btn-sm">
@@ -74,7 +74,7 @@
                                 <span class="small">{{ dpia_check.recommendation_reason }}</span>
                             </div>
                             <div class="d-flex flex-column gap-1">
-                                <span class="badge text-bg-{{ dpia_check.recommendation_badge_class }}">
+                                <span class="badge text-bg-{% if dpia_check.completed %}success{% else %}secondary{% endif %}">
                                     {% if dpia_check.completed %}Prüfung abgeschlossen{% else %}Prüfung offen{% endif %}
                                 </span>
                             </div>
@@ -154,7 +154,8 @@
                                     <strong>Hinweis:</strong>
                                     Der Standardfall wird aus dem Verfahren übernommen und hier nur angezeigt.
                                     Bei Standardfällen mit mittlerem oder hohem Risikohinweis soll regelmäßig mindestens
-                                    „DSFA empfohlen“ erscheinen, solange keine gegenteilige dokumentierte Rechtsbewertung vorliegt.
+                                    „DSFA empfohlen“ erscheinen, solange keine gegenteilige dokumentierte Rechtsbewertung
+                                    oder abgeschlossene DSFA-Prüfung vorliegt.
                                 </div>
                             </div>
 
@@ -166,6 +167,9 @@
                             <div class="col-12">
                                 <label class="form-label">{{ check_form.open_points.label }}</label>
                                 {{ check_form.open_points }}
+                                <div class="small text-muted mt-1">
+                                    Nur echte offene Punkte eintragen. Wenn keine offenen Punkte bestehen, Feld leer lassen oder „N/A“ eintragen.
+                                </div>
                             </div>
 
                             <div class="col-12">

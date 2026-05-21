@@ -11,67 +11,97 @@
     }
 
     .processing-table {
-        min-width: 2450px;
+        min-width: 2950px;
+        table-layout: fixed;
+    }
+
+    .processing-table th,
+    .processing-table td {
+        vertical-align: top;
     }
 
     .col-actions {
-        min-width: 180px;
+        width: 190px;
+        min-width: 190px;
     }
 
     .col-title {
-        min-width: 260px;
+        width: 340px;
+        min-width: 340px;
+        white-space: normal;
     }
 
     .col-id {
-        min-width: 110px;
+        width: 125px;
+        min-width: 125px;
     }
 
     .col-tenant {
-        min-width: 170px;
+        width: 190px;
+        min-width: 190px;
+        white-space: normal;
     }
 
     .col-review {
-        min-width: 150px;
+        width: 175px;
+        min-width: 175px;
     }
 
     .col-status {
-        min-width: 120px;
+        width: 135px;
+        min-width: 135px;
     }
 
     .col-responsible {
-        min-width: 170px;
+        width: 200px;
+        min-width: 200px;
+        white-space: normal;
     }
 
     .col-dpia {
-        min-width: 240px;
+        width: 285px;
+        min-width: 285px;
+        white-space: normal;
     }
 
     .col-reminder {
-        min-width: 180px;
+        width: 195px;
+        min-width: 195px;
+        white-space: normal;
     }
 
     .col-thirdinfo {
-        min-width: 220px;
+        width: 245px;
+        min-width: 245px;
+        white-space: normal;
     }
 
     .col-thirdcountry {
-        min-width: 130px;
+        width: 155px;
+        min-width: 155px;
     }
 
     .col-department {
-        min-width: 150px;
+        width: 185px;
+        min-width: 185px;
+        white-space: normal;
     }
 
     .col-documents {
-        min-width: 160px;
+        width: 165px;
+        min-width: 165px;
     }
 
     .col-origin {
-        min-width: 220px;
+        width: 255px;
+        min-width: 255px;
+        white-space: normal;
     }
 
     .col-archived {
-        min-width: 180px;
+        width: 205px;
+        min-width: 205px;
+        white-space: normal;
     }
 
     .floating-scroll-left {
@@ -183,8 +213,7 @@
         {% if items %}
             <div id="processing-table-scroll" class="processing-table-wrapper">
                 <table id="processing-table"
-                    class="table table-striped table-hover align-middle mb-0"
-                    style="min-width: 2450px; table-layout: fixed;">
+                    class="table table-striped table-hover align-middle mb-0 processing-table">
                     <thead>
                         <tr>
                             <th class="text-nowrap px-3 py-3 col-actions resizable-column">Aktionen</th>
@@ -212,7 +241,7 @@
                         {% for item in items %}
                             <tr>
                                 <td class="px-3">
-                                    <div class="d-flex flex-wrap gap-2 col-actions">
+                                    <div class="d-flex flex-wrap gap-2 col-actions resizable-column">
                                         {% if item.status == "archived" %}
                                             <form method="post" action="{% url 'processing_reactivate' item.pk %}">
                                                 {% csrf_token %}
@@ -236,7 +265,7 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-title">
+                                    <div class="col-title resizable-column">
                                         {{ item.title }}
                                     </div>
                                 </td>
@@ -247,7 +276,7 @@
 
                                 {% if user.is_superuser %}
                                     <td class="px-3">
-                                        <div class="col-tenant">
+                                        <div class="col-tenant resizable-column">
                                             {{ item.tenant.name|default:"—" }}
                                         </div>
                                     </td>
@@ -264,13 +293,13 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-responsible">
+                                    <div class="col-responsible resizable-column">
                                         {{ item.responsible_person|default:"—" }}
                                     </div>
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-dpia">
+                                    <div class="col-dpia resizable-column">
                                         <span class="badge text-bg-{{ item.dpia_status_badge_class }}">
                                             {{ item.dpia_status_label }}
                                         </span>
@@ -283,7 +312,7 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-reminder">
+                                    <div class="col-reminder resizable-column">
                                         {% if item.is_reminder_due %}
                                             <span class="badge text-bg-danger">Fällig</span>
                                             <div class="small text-muted mt-1">
@@ -301,7 +330,7 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-thirdinfo">
+                                    <div class="col-thirdinfo resizable-column">
                                         {% if item.third_party_info_required %}
                                             <span class="badge text-bg-info">Erforderlich</span>
                                             {% if item.contact_person %}
@@ -323,13 +352,13 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-department">
+                                    <div class="col-department resizable-column">
                                         {{ item.department.name|default:"—" }}
                                     </div>
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-documents">
+                                    <div class="col-documents resizable-column">
                                         {% with doc_count=item.documents.count %}
                                             {% if doc_count %}
                                                 <a href="{% url 'processing_detail' item.pk %}" class="text-decoration-none">
@@ -344,7 +373,7 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-origin">
+                                    <div class="col-origin resizable-column">
                                         {% if item.template_origin %}
                                             <span class="badge text-bg-primary">Aus Vorlage</span>
                                             <div class="small text-muted mt-1">
@@ -357,7 +386,7 @@
                                 </td>
 
                                 <td class="px-3">
-                                    <div class="col-archived">
+                                    <div class="col-archived resizable-column">
                                         {% if item.status == "archived" %}
                                             <span class="badge text-bg-secondary">Archiviert</span>
                                             {% if item.archived_at %}
@@ -434,7 +463,8 @@
             const widths = JSON.parse(savedWidths);
             headers.forEach((header, index) => {
                 if (widths[index]) {
-                    header.style.width = widths[index];
+                    header.style.width = widths[index] + "px";
+                    header.style.minWidth = widths[index] + "px";
                 }
             });
         } catch (error) {
@@ -449,7 +479,7 @@
         }
 
         const headers = table.querySelectorAll("thead th.resizable-column");
-        const widths = Array.from(headers).map((header) => `${header.offsetWidth}px`);
+        const widths = Array.from(headers).map((header) => header.offsetWidth);
         localStorage.setItem(storageKey, JSON.stringify(widths));
     }
 

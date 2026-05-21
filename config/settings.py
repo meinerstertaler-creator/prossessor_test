@@ -123,8 +123,8 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 LOGIN_URL = "/accounts/login/"
 
-# 🔧 DEBUG-STEP für morgen
-LOGIN_REDIRECT_URL = "/admin/"
+# 🔧 nach Ligin direkt in Prossessor
+LOGIN_REDIRECT_URL = "/processing/"
 
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 

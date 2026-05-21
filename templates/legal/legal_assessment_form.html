@@ -194,14 +194,11 @@
                             </div>
                         </div>
 
-                    {% elif dpia_check and dpia_check.recommendation in "mandatory recommended" %}
-                        <div class="alert alert-{% if dpia_check.recommendation == 'mandatory' %}danger{% else %}warning{% endif %} mb-0">
+                    {% elif dpia_check and dpia_check.recommendation == "mandatory" %}
+                        <div class="alert alert-danger mb-0">
                             <strong>{{ dpia_check.recommendation_label }}</strong><br>
-                            {% if dpia_check.recommendation == "mandatory" %}
-                                Die DSFA-Prüfung ergibt, dass eine DSFA erforderlich ist. Eine gegenteilige Dokumentation ist hier nicht vorgesehen.
-                            {% else %}
-                                Die DSFA-Prüfung ergibt, dass eine DSFA empfohlen ist. Bitte die DSFA-Prüfung weiter vertiefen oder die DSFA-Durchführung dokumentieren.
-                            {% endif %}
+                            Die DSFA-Prüfung ergibt, dass eine DSFA erforderlich ist.
+                            Bei einem Muss-Listen-Fall ist eine gegenteilige Dokumentation hier nicht vorgesehen.
                         </div>
 
                         {% if dpia_check %}
@@ -209,6 +206,32 @@
                                 {{ dpia_check.recommendation_reason }}
                             </div>
                         {% endif %}
+
+                    {% elif dpia_check and dpia_check.recommendation == "recommended" %}
+                        <div class="alert alert-warning mb-3">
+                            <strong>{{ dpia_check.recommendation_label }}</strong><br>
+                            Die DSFA-Prüfung ergibt, dass eine DSFA empfohlen ist.
+                            Der DSB kann die Empfehlung nach dokumentierter Prüfung überschreiben.
+                        </div>
+
+                        {% if dpia_check %}
+                            <div class="small text-muted mb-3">
+                                {{ dpia_check.recommendation_reason }}
+                            </div>
+                        {% endif %}
+
+                        <label class="form-label">{{ form.no_dpia_check_required_reason.label }}</label>
+                        {{ form.no_dpia_check_required_reason }}
+
+                        <div class="mt-3">
+                            <label class="form-label">{{ form.no_dpia_check_required_note.label }}</label>
+                            {{ form.no_dpia_check_required_note }}
+                        </div>
+
+                        <div class="small text-muted mt-2">
+                            Nur verwenden, wenn nach dokumentierter Prüfung kein gesonderter DSFA-Check erforderlich ist.
+                            Andernfalls bitte die DSFA-Prüfung weiterführen.
+                        </div>
 
                     {% else %}
                         <div class="alert alert-secondary">

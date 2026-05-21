@@ -300,6 +300,7 @@ def _mark_action_irrelevant_if_exists(assessment, title: str):
 def close_resolved_legal_assessment_actions(assessment):
     processing = assessment.processing_activity
     dpia_check = getattr(processing, "dpia_check", None)
+    dpia = getattr(processing, "dpia", None)
 
     if not _is_blank_text(assessment.legal_assessment_text):
         _close_action_if_exists(
@@ -373,6 +374,16 @@ def close_resolved_legal_assessment_actions(assessment):
         _close_action_if_exists(
             assessment,
             "Offene Rechtsfragen klären",
+        )
+
+    if (
+        assessment.no_dpia_check_required_reason
+        or (dpia_check and dpia_check.completed and dpia_check.recommendation == "not_required")
+        or (dpia and dpia.approved)
+    ):
+        _close_action_if_exists(
+            assessment,
+            "DSFA-Prüfung erneut durchführen",
         )
 
 
