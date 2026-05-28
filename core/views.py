@@ -62,7 +62,7 @@ def dashboard(request):
         "processing_open_count": processing_qs.filter(review_completed_at__isnull=True).count(),
         "dpia_required_count": dpia_required_count,
         "third_info_required_count": processing_qs.filter(third_party_info_required=True).count(),
-        "actions_open_count": actions_qs.filter(
+        "open_actions_count": actions_qs.filter(
             status__in=[
                 ActionItem.Status.OPEN,
                 ActionItem.Status.IN_PROGRESS,

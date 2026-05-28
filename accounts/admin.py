@@ -73,8 +73,29 @@ class TenantAdminForm(forms.ModelForm):
                 for setting in TenantProcessingTemplateSetting.objects.filter(tenant=self.instance)
             }
 
+        def is_default_disabled_special_template(template):
+            title = (template.title or "").lower()
+            group = ""
+            if getattr(template, "template_group", None):
+                group = str(template.template_group).lower()
+
+            special_markers = [
+                "arzt",
+                "arztpraxis",
+                "ärzt",
+                "rechtsanwalt",
+                "rechtsanwälte",
+                "rechtsanwaelte",
+                "kanzlei",
+            ]
+
+            return any(marker in title or marker in group for marker in special_markers)
+
         def is_enabled_for_template(template):
-            return settings_map.get(template.pk, True)
+            if template.pk in settings_map:
+                return settings_map[template.pk]
+
+            return not is_default_disabled_special_template(template)
 
         self.fields["standard_templates_general"].initial = [
             str(template.pk)
@@ -190,12 +211,7 @@ class UserAdmin(DjangoUserAdmin):
         (
             "Mandantenbezug",
             {
-                "fields": (
-                    "tenant",
-                    "role",
-                    "salutation",
-                    "greeting_mode",
-                ),
+                "fields": ("tenant", "role"),
             },
         ),
     )
@@ -204,12 +220,7 @@ class UserAdmin(DjangoUserAdmin):
         (
             "Mandantenbezug",
             {
-                "fields": (
-                    "tenant",
-                    "role",
-                    "salutation",
-                    "greeting_mode",
-                ),
+                "fields": ("tenant", "role"),
             },
         ),
     )
