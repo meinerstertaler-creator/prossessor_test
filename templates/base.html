@@ -31,6 +31,26 @@
             white-space: nowrap;
         }
 
+        .navbar-nav .nav-link {
+            position: relative;
+        }
+
+        .navbar-nav .nav-link.active-section {
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .navbar-nav .nav-link.active-section::after {
+            content: "";
+            position: absolute;
+            left: 0.75rem;
+            right: 0.75rem;
+            bottom: 0.25rem;
+            height: 3px;
+            background: #ff8c00;
+            border-radius: 999px;
+        }
+
         .nav-link.disabled {
             opacity: 0.65;
             pointer-events: none;
@@ -98,18 +118,18 @@
 
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav me-auto mb-2 mb-xxl-0">
-                <li class="nav-item"><a class="nav-link" href="/core/">Übersicht</a></li>
-                <li class="nav-item"><a class="nav-link" href="/processing/">Verfahren</a></li>
-                <li class="nav-item"><a class="nav-link" href="/processors/">Auftragsverarbeiter</a></li>
-                <li class="nav-item"><a class="nav-link" href="/audits/">Audits</a></li>
-                <li class="nav-item"><a class="nav-link" href="/actions/">Maßnahmen</a></li>
-                <li class="nav-item"><a class="nav-link" href="/documents/">Dokumente</a></li>
-                <li class="nav-item"><a class="nav-link" href="/reports/">Berichte</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':6' == '/core/' %}active-section{% endif %}" href="/core/">Übersicht</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':12' == '/processing/' %}active-section{% endif %}" href="/processing/">Verfahren</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':12' == '/processors/' %}active-section{% endif %}" href="/processors/">Auftragsverarbeiter</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':8' == '/audits/' %}active-section{% endif %}" href="/audits/">Audits</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':9' == '/actions/' %}active-section{% endif %}" href="/actions/">Maßnahmen</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':11' == '/documents/' %}active-section{% endif %}" href="/documents/">Dokumente</a></li>
+                <li class="nav-item"><a class="nav-link {% if request.path|slice:':9' == '/reports/' %}active-section{% endif %}" href="/reports/">Berichte</a></li>
                 <li class="nav-item">
                     <a class="nav-link disabled" href="#">Vorlagen importieren</a>
                 </li>
                 {% if user.is_authenticated and user.is_superuser %}
-                    <li class="nav-item"><a class="nav-link" href="/admin/">Admin</a></li>
+                    <li class="nav-item"><a class="nav-link {% if request.path|slice:':7' == '/admin/' %}active-section{% endif %}" href="/admin/">Admin</a></li>
                 {% endif %}
             </ul>
 
@@ -117,8 +137,21 @@
                 {% if user.is_authenticated %}
                     <li class="nav-item">
                         <span class="navbar-text me-3 d-flex flex-column align-items-start">
-                            <span class="small">Angemeldet als</span>
-                            <strong>{{ user.username }}</strong>
+                            {% if user.greeting_mode == "first_name" and user.first_name %}
+                                <strong>Hallo {{ user.first_name }}.</strong>
+                            {% elif user.greeting_mode == "last_name" and user.last_name %}
+                                <strong>
+                                    Guten Tag,
+                                    {% if user.salutation == "mr" %}
+                                        Herr
+                                    {% elif user.salutation == "ms" %}
+                                        Frau
+                                    {% endif %}
+                                    {{ user.last_name }}.
+                                </strong>
+                            {% else %}
+                                <strong>Hallo {{ user.username }}.</strong>
+                            {% endif %}
                             {% if active_tenant %}
                                 <span class="small">Mandant: {{ active_tenant.name }}</span>
                             {% elif user.tenant %}

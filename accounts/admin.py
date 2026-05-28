@@ -190,7 +190,12 @@ class UserAdmin(DjangoUserAdmin):
         (
             "Mandantenbezug",
             {
-                "fields": ("tenant", "role"),
+                "fields": (
+                    "tenant",
+                    "role",
+                    "salutation",
+                    "greeting_mode",
+                ),
             },
         ),
     )
@@ -199,7 +204,12 @@ class UserAdmin(DjangoUserAdmin):
         (
             "Mandantenbezug",
             {
-                "fields": ("tenant", "role"),
+                "fields": (
+                    "tenant",
+                    "role",
+                    "salutation",
+                    "greeting_mode",
+                ),
             },
         ),
     )

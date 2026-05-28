@@ -229,6 +229,8 @@ def document_edit(request, pk):
         item.title = (request.POST.get("title") or "").strip() or item.title
         item.version = (request.POST.get("version") or "").strip()
         item.description = (request.POST.get("description") or "").strip() or "N/A"
+        folder_id = (request.POST.get("folder") or "").strip()
+        label_ids = request.POST.getlist("labels")
 
         document_status = (request.POST.get("document_status") or "").strip()
         if document_status in dict(Document.DocumentStatus.choices):
@@ -258,8 +260,23 @@ def document_edit(request, pk):
         else:
             item.related_processor = None
 
+        # Ordner speichern
+        if folder_id:
+            try:
+                item.folder = _get_available_folders_for_request(request).get(pk=folder_id)
+            except DocumentFolder.DoesNotExist:
+                messages.error(request, "Der gewählte Ordner ist nicht zulässig.")
+                return redirect("document_edit", pk=item.pk)
+        else:
+            item.folder = None
         item.save()
+
+        # Labels speichern
+        valid_labels = _get_available_labels_for_request(request).filter(pk__in=label_ids)
+        item.labels.set(valid_labels)
+
         messages.success(request, "Dokument wurde aktualisiert.")
+
         return redirect("document_list")
 
     return render(

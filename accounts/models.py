@@ -28,11 +28,50 @@ class User(AbstractUser):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class GreetingMode(models.TextChoices):
+        FIRST_NAME = "first_name", "Vorname"
+        LAST_NAME = "last_name", "Nachname"
+
+    class Salutation(models.TextChoices):
+        MR = "mr", "Herr"
+        MS = "ms", "Frau"
+        NEUTRAL = "neutral", "Neutral"
+
+    salutation = models.CharField(
+        max_length=20,
+        choices=Salutation.choices,
+        default=Salutation.NEUTRAL,
+        verbose_name="Anrede",
+    )
+
+    greeting_mode = models.CharField(
+        max_length=20,
+        choices=GreetingMode.choices,
+        default=GreetingMode.LAST_NAME,
+        verbose_name="Begrüßungsart",
+    )
+
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    tenant = models.ForeignKey(
+        Tenant,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
     def __str__(self):
         if self.tenant:
             return f"{self.username} ({self.tenant})"
-        return self.username
-
+        return self.username   
 
 class CompanyProfile(models.Model):
     tenant = models.OneToOneField(

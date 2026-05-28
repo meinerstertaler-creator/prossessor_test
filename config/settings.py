@@ -124,7 +124,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 LOGIN_URL = "/accounts/login/"
 
 # 🔧 nach Ligin direkt in Prossessor
-LOGIN_REDIRECT_URL = "/processing/"
+LOGIN_REDIRECT_URL = "/core/"
 
 LOGOUT_REDIRECT_URL = "/accounts/login/"
 

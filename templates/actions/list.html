@@ -11,39 +11,56 @@
     }
 
     .actions-table {
-        min-width: 1500px;
+        min-width: 1750px;
+        table-layout: fixed;
+    }
+
+    .actions-table th,
+    .actions-table td {
+        vertical-align: top;
     }
 
     .col-title {
-        min-width: 260px;
+        width: 320px;
+        min-width: 320px;
+        white-space: normal;
     }
 
     .col-source {
-        min-width: 320px;
+        width: 400px;
+        min-width: 400px;
+        white-space: normal;
     }
 
     .col-priority {
-        min-width: 110px;
+        width: 125px;
+        min-width: 125px;
     }
 
     .col-status {
-        min-width: 140px;
+        width: 155px;
+        min-width: 155px;
     }
 
     .col-actions {
-        min-width: 180px;
+        width: 210px;
+        min-width: 210px;
     }
 
     .col-responsible {
-        min-width: 160px;
+        width: 190px;
+        min-width: 190px;
+        white-space: normal;
     }
 
     .col-followup {
-        min-width: 120px;
+        width: 145px;
+        min-width: 145px;
     }
 
     .col-updated {
-        min-width: 155px;
+        width: 175px;
+        min-width: 175px;
     }
 
     .floating-scroll-left {
@@ -155,8 +172,7 @@
         {% if items %}
             <div id="actions-table-scroll" class="actions-table-wrapper">
                 <table id="actions-table"
-                       class="table table-striped table-hover align-middle mb-0 actions-table"
-                       style="table-layout: fixed;">
+                       class="table table-striped table-hover align-middle mb-0 actions-table">
                     <thead>
                         <tr>
                             <th class="col-title resizable-column">Titel</th>
@@ -296,7 +312,8 @@
             const widths = JSON.parse(savedWidths);
             headers.forEach((header, index) => {
                 if (widths[index]) {
-                    header.style.width = widths[index];
+                    header.style.width = widths[index] + "px";
+                    header.style.minWidth = widths[index] + "px";
                 }
             });
         } catch (error) {
@@ -311,7 +328,7 @@
         }
 
         const headers = table.querySelectorAll("thead th.resizable-column");
-        const widths = Array.from(headers).map((header) => `${header.offsetWidth}px`);
+        const widths = Array.from(headers).map((header) => header.offsetWidth);
         localStorage.setItem(storageKey, JSON.stringify(widths));
     }
 

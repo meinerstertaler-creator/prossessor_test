@@ -42,6 +42,37 @@
                     </select>
                 </div>
 
+                <div class="col-md-6">
+                    <label for="id_folder" class="form-label">Ordner</label>
+                    <select id="id_folder" name="folder" class="form-select">
+                        <option value="">-- kein Ordner --</option>
+                        {% for folder in folders %}
+                            <option value="{{ folder.pk }}"
+                                {% if item.folder and item.folder.pk == folder.pk %}selected{% endif %}>
+                                {{ folder }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        Das Dokument kann nachträglich einem Ordner zugeordnet werden.
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="id_labels" class="form-label">Labels</label>
+                    <select id="id_labels" name="labels" class="form-select" multiple size="5">
+                        {% for label in labels %}
+                            <option value="{{ label.pk }}"
+                                {% if label in item.labels.all %}selected{% endif %}>
+                                {{ label.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">
+                        Mehrfachauswahl mit Strg gedrückt halten.
+                    </div>
+                </div>
+
                 <div class="col-12">
                     <label for="id_file" class="form-label">Datei ersetzen (optional)</label>
                     <input type="file" id="id_file" name="file" class="form-control">
