@@ -141,6 +141,9 @@ def _get_available_templates_for_request(request):
 
 def _build_upload_context(request, extra=None):
     context = {
+        "selected_document_type": (request.GET.get("document_type") or "").strip(),
+        "selected_related_processing_activity": (request.GET.get("related_processing_activity") or "").strip(),
+        "selected_related_processor": (request.GET.get("related_processor") or "").strip(),
         "document_types": Document.DocumentType.choices,
         "document_statuses": Document.DocumentStatus.choices,
         "folders": _get_available_folders_for_request(request),
@@ -365,6 +368,13 @@ def document_upload(request):
             document.labels.set(valid_labels)
 
         messages.success(request, "Dokument erfolgreich hochgeladen.")
+
+        if document.related_processor_id:
+            return redirect("processor_detail", pk=document.related_processor_id)
+
+        if document.related_processing_activity_id:
+            return redirect("processing_detail", pk=document.related_processing_activity_id)
+
         return redirect("document_list")
 
     return render(request, "documents/upload.html", _build_upload_context(request))
@@ -462,6 +472,13 @@ def document_create_from_template(request):
         document.labels.set(valid_labels)
 
     messages.success(request, "Mustertext wurde als Dokument übernommen.")
+
+    if document.related_processor_id:
+        return redirect("processor_detail", pk=document.related_processor_id)
+
+    if document.related_processing_activity_id:
+        return redirect("processing_detail", pk=document.related_processing_activity_id)
+
     return redirect("document_list")
 
 

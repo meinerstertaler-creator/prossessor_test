@@ -254,9 +254,12 @@ def processing_create(request):
 
         selected_template = None
         if "template_source" in form.fields:
-            selected_template = form.fields["template_source"].queryset.filter(
-                pk=request.POST.get("template_source")
-            ).first()
+            template_source_id = request.POST.get("template_source") or None
+
+            if template_source_id:
+                selected_template = form.fields["template_source"].queryset.filter(
+                    pk=template_source_id
+                ).first()
 
         if request.POST.get("load_template") == "1":
             template_initial = _get_template_initial_data(selected_template, request)

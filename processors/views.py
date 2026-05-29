@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.base import File
+from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from actions.models import ActionItem
@@ -30,6 +31,16 @@ def _tenant_filtered_processor_queryset(request):
         return qs.filter(tenant=request.user.tenant)
 
     return qs.none()
+
+
+def _available_documents_for_processor_link(request, processor):
+    qs = Document.objects.filter(
+        Q(tenant=processor.tenant)
+        | Q(related_processing_activity__tenant=processor.tenant)
+        | Q(related_processor__tenant=processor.tenant)
+    ).distinct().order_by("title")
+
+    return qs
 
 
 def _get_provider_catalog_payload():
@@ -262,6 +273,28 @@ def processor_create(request):
 def processor_detail(request, pk):
     item = get_object_or_404(_tenant_filtered_processor_queryset(request), pk=pk)
 
+    if request.method == "POST":
+        document_id = (request.POST.get("existing_document") or "").strip()
+
+        if not document_id:
+            messages.error(request, "Bitte ein vorhandenes Dokument auswählen.")
+            return redirect("processor_detail", pk=item.pk)
+
+        try:
+            document = _available_documents_for_processor_link(request, item).get(pk=document_id)
+        except Document.DoesNotExist:
+            messages.error(request, "Das ausgewählte Dokument ist für diesen Mandanten nicht verfügbar.")
+            return redirect("processor_detail", pk=item.pk)
+
+        document.related_processor = item
+
+        if not document.tenant_id:
+            document.tenant = item.tenant
+
+        document.save(update_fields=["related_processor", "tenant", "updated_at"])
+        messages.success(request, "Dokument wurde mit dem Auftragsverarbeiter verknüpft.")
+        return redirect("processor_detail", pk=item.pk)
+
     copied = _copy_catalog_documents_to_tenant(item)
     if copied["av_created"] or copied["tom_created"]:
         copied_parts = []
@@ -284,6 +317,15 @@ def processor_detail(request, pk):
         document_type=Document.DocumentType.TOM,
     ).order_by("-created_at")
 
+    processor_documents = Document.objects.filter(
+        related_processor=item,
+    ).order_by("-updated_at", "title")
+
+    available_documents_to_link = (
+        _available_documents_for_processor_link(request, item)
+        .exclude(pk__in=processor_documents.values_list("pk", flat=True))
+    )
+
     catalog_update_required = _catalog_update_required(item)
 
     if catalog_update_required:
@@ -303,10 +345,11 @@ def processor_detail(request, pk):
             "latest_av_contract_document": av_contract_documents.first(),
             "tom_documents": tom_documents,
             "latest_tom_document": tom_documents.first(),
+            "processor_documents": processor_documents,
+            "available_documents_to_link": available_documents_to_link,
             "catalog_update_required": catalog_update_required,
         },
     )
-
 
 @login_required
 def processor_edit(request, pk):

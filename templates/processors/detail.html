@@ -21,6 +21,46 @@
 </div>
 {% endif %}
 
+<div class="card mb-4 border-primary-subtle">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
+            <div>
+                <h2 class="h5 mb-1">Dokumente zum Auftragsverarbeiter</h2>
+                <p class="text-muted mb-0">
+                    AV-Verträge, TOM, Leistungs-/Wartungsverträge, Zertifikate oder sonstige Nachweise können direkt diesem Auftragsverarbeiter zugeordnet werden.
+                </p>
+            </div>
+            <a href="{% url 'document_upload' %}?related_processor={{ item.pk }}"
+               class="btn btn-outline-primary">
+                Dokument hochladen
+            </a>
+        </div>
+
+        <form method="post" class="row g-2 align-items-end">
+            {% csrf_token %}
+            <div class="col-12 col-lg-9">
+                <label for="id_existing_document" class="form-label">Vorhandenes Dokument verknüpfen</label>
+                <select id="id_existing_document" name="existing_document" class="form-select">
+                    <option value="">-- vorhandenes Dokument auswählen --</option>
+                    {% for doc in available_documents_to_link %}
+                        <option value="{{ doc.pk }}">
+                            {{ doc.title }}{% if doc.version %} ({{ doc.version }}){% endif %} – {{ doc.get_document_type_display }}
+                        </option>
+                    {% endfor %}
+                </select>
+                <div class="form-text">
+                    Das Dokument wird nicht kopiert, sondern zusätzlich mit diesem Auftragsverarbeiter verknüpft.
+                </div>
+            </div>
+            <div class="col-12 col-lg-3">
+                <button type="submit" class="btn btn-outline-secondary w-100">
+                    Verknüpfen
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="row g-4">
     <div class="col-lg-6">
         <div class="card h-100">
@@ -223,6 +263,62 @@
                         {% endif %}
                     </dd>
                 </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h5 mb-0">Alle verknüpften Dokumente</h2>
+                    <a href="{% url 'document_upload' %}?related_processor={{ item.pk }}"
+                       class="btn btn-sm btn-outline-primary">
+                        Weiteres Dokument hochladen
+                    </a>
+                </div>
+
+                {% if processor_documents %}
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Titel</th>
+                                    <th>Typ</th>
+                                    <th>Status</th>
+                                    <th>Version</th>
+                                    <th>Stand</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for doc in processor_documents %}
+                                    <tr>
+                                        <td>{{ doc.title }}</td>
+                                        <td>{{ doc.get_document_type_display }}</td>
+                                        <td>{{ doc.get_document_status_display }}</td>
+                                        <td>{{ doc.version|default:"—" }}</td>
+                                        <td>{{ doc.updated_at|date:"d.m.Y H:i" }}</td>
+                                        <td class="text-end">
+                                            <a href="{% url 'document_download' doc.pk %}"
+                                               class="btn btn-sm btn-outline-primary"
+                                               target="_blank"
+                                               rel="noopener">
+                                                Öffnen
+                                            </a>
+                                            <a href="{% url 'document_edit' doc.pk %}"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                Bearbeiten
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="mb-0">Noch keine Dokumente verknüpft.</p>
+                {% endif %}
             </div>
         </div>
     </div>

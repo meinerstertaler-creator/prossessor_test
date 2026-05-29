@@ -34,7 +34,7 @@
                             <label for="id_document_type" class="form-label">Dokumenttyp</label>
                             <select id="id_document_type" name="document_type" class="form-select" required>
                                 {% for value, label in document_types %}
-                                    <option value="{{ value }}">{{ label }}</option>
+                                    <option value="{{ value }}" {% if selected_document_type == value %}selected{% endif %}>{{ label }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -76,7 +76,7 @@
                             <select id="id_related_processing_activity" name="related_processing_activity" class="form-select">
                                 <option value="">-- kein Verfahren --</option>
                                 {% for item in processing_choices %}
-                                    <option value="{{ item.pk }}">{{ item.title }}</option>
+                                    <option value="{{ item.pk }}" {% if selected_related_processing_activity == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.title }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -86,7 +86,7 @@
                             <select id="id_related_processor" name="related_processor" class="form-select">
                                 <option value="">-- kein Auftragsverarbeiter --</option>
                                 {% for item in processor_choices %}
-                                    <option value="{{ item.pk }}">{{ item.name }}</option>
+                                    <option value="{{ item.pk }}" {% if selected_related_processor == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -204,7 +204,7 @@
                             <select id="id_template_related_processing_activity" name="related_processing_activity" class="form-select">
                                 <option value="">-- kein Verfahren --</option>
                                 {% for item in processing_choices %}
-                                    <option value="{{ item.pk }}">{{ item.title }}</option>
+                                    <option value="{{ item.pk }}" {% if selected_related_processing_activity == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.title }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -214,7 +214,7 @@
                             <select id="id_template_related_processor" name="related_processor" class="form-select">
                                 <option value="">-- kein Auftragsverarbeiter --</option>
                                 {% for item in processor_choices %}
-                                    <option value="{{ item.pk }}">{{ item.name }}</option>
+                                    <option value="{{ item.pk }}" {% if selected_related_processor == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
@@ -306,3 +306,4 @@
 </div>
 
 {% endblock %}
+_________________________

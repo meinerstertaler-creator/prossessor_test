@@ -7,6 +7,7 @@ from django.shortcuts import redirect, render
 from actions.models import ActionItem
 from legal.models import LegalAssessment
 from processing.models import ProcessingActivity
+from processors.models import Processor
 
 from .tenant_utils import get_effective_tenant
 
@@ -43,6 +44,7 @@ def dashboard(request):
     processing_qs = ProcessingActivity.objects.all()
     actions_qs = ActionItem.objects.all()
     legal_qs = LegalAssessment.objects.all()
+    processor_qs = Processor.objects.all()
 
     tenant = get_effective_tenant(request)
 
@@ -50,6 +52,7 @@ def dashboard(request):
         processing_qs = processing_qs.filter(tenant=tenant)
         actions_qs = actions_qs.filter(tenant=tenant)
         legal_qs = legal_qs.filter(tenant=tenant)
+        processor_qs = processor_qs.filter(tenant=tenant)
 
     dpia_required_count = 0
     for item in processing_qs.select_related("dpia_check"):
@@ -59,6 +62,7 @@ def dashboard(request):
 
     context = {
         "processing_count": processing_qs.count(),
+        "processor_count": processor_qs.count(),
         "processing_open_count": processing_qs.filter(review_completed_at__isnull=True).count(),
         "dpia_required_count": dpia_required_count,
         "third_info_required_count": processing_qs.filter(third_party_info_required=True).count(),
