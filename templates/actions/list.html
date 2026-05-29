@@ -167,6 +167,50 @@
     </div>
 {% endif %}
 
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3 align-items-end">
+            {% if show_history %}
+                <input type="hidden" name="show_history" value="1">
+            {% endif %}
+            {% if processing_id %}
+                <input type="hidden" name="processing_id" value="{{ processing_id }}">
+            {% endif %}
+            <input type="hidden" name="sort" value="{{ current_sort }}">
+
+            <div class="col-12 col-md-4">
+                <label for="id_overdue" class="form-label">Überfälligkeit</label>
+                <select name="overdue" id="id_overdue" class="form-select">
+                    <option value="">Alle offenen Maßnahmen</option>
+                    <option value="1" {% if overdue_filter == "1" %}selected{% endif %}>Nur überfällige Maßnahmen</option>
+                </select>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <label for="id_priority_filter" class="form-label">Priorität</label>
+                <select name="priority" id="id_priority_filter" class="form-select">
+                    <option value="">Alle Prioritäten</option>
+                    {% for value, label in priority_choices %}
+                        <option value="{{ value }}" {% if priority_filter == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-12 col-md-4 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary">Filtern</button>
+                <a href="{% url 'action_list' %}" class="btn btn-outline-secondary">Zurücksetzen</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if overdue_filter == "1" %}
+    <div class="alert alert-warning d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <div>Gefiltert auf <strong>überfällige Maßnahmen</strong>.</div>
+        <a href="{% url 'action_list' %}" class="btn btn-sm btn-outline-secondary">Filter entfernen</a>
+    </div>
+{% endif %}
+
 <div class="card">
     <div class="card-body p-0">
         {% if items %}
@@ -181,7 +225,7 @@
                             <th class="col-status text-nowrap resizable-column">Status</th>
                             <th class="col-actions text-nowrap resizable-column">Aktionen</th>
                             <th class="col-responsible resizable-column">Verantwortlich</th>
-                            <th class="col-followup text-nowrap resizable-column">Wiedervorlage</th>
+                            <th class="col-followup text-nowrap resizable-column">Automatik-Frist</th>
                             <th class="col-updated text-nowrap resizable-column">Letzte Bearbeitung</th>
                         </tr>
                     </thead>
@@ -210,7 +254,13 @@
                                 </td>
 
                                 <td class="text-nowrap">
-                                    {{ item.get_priority_display }}
+                                    {% if item.priority == "high" %}
+                                        <span class="badge text-bg-danger">{{ item.get_priority_display }}</span>
+                                    {% elif item.priority == "medium" %}
+                                        <span class="badge text-bg-warning">{{ item.get_priority_display }}</span>
+                                    {% else %}
+                                        <span class="badge text-bg-secondary">{{ item.get_priority_display }}</span>
+                                    {% endif %}
                                 </td>
 
                                 <td class="text-nowrap">
@@ -243,7 +293,12 @@
                                 </td>
 
                                 <td class="text-nowrap">
-                                    {{ item.follow_up_date|default:"—" }}
+                                    {% if item.auto_due_date %}
+                                        <span class="badge text-bg-{{ item.due_badge_class }}">{{ item.due_state_label }}</span>
+                                        <div class="small text-muted mt-1">{{ item.auto_due_date|date:"d.m.Y" }}</div>
+                                    {% else %}
+                                        —
+                                    {% endif %}
                                 </td>
 
                                 <td class="text-nowrap">
@@ -332,18 +387,20 @@
         localStorage.setItem(storageKey, JSON.stringify(widths));
     }
 
+
+
     document.addEventListener("DOMContentLoaded", function () {
-        applySavedColumnWidths("actions-table", "actions-table-widths");
-        enableResizableTable("actions-table", "actions-table-widths");
+        applySavedColumnWidths("actions-table", "actions-column-widths");
+        enableResizableTable("actions-table", "actions-column-widths");
 
         const table = document.getElementById("actions-table");
         if (table) {
             table.addEventListener("mouseup", function () {
-                saveColumnWidths("actions-table", "actions-table-widths");
+                saveColumnWidths("actions-table", "actions-column-widths");
             });
 
             table.addEventListener("mouseleave", function () {
-                saveColumnWidths("actions-table", "actions-table-widths");
+                saveColumnWidths("actions-table", "actions-column-widths");
             });
         }
     });

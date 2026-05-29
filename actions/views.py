@@ -1,7 +1,9 @@
+from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, IntegerField, Q, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
 
 from core.tenant_utils import get_effective_tenant
 from legal.models import LegalAssessment
@@ -12,17 +14,68 @@ from .models import ActionItem
 from .services import generate_actions_from_legal_assessment
 
 
+OPEN_ACTION_STATUSES = [
+    ActionItem.Status.OPEN,
+    ActionItem.Status.IN_PROGRESS,
+    ActionItem.Status.WAITING,
+    ActionItem.Status.FOLLOW_UP,
+]
+
+PRIORITY_DUE_DAYS = {
+    ActionItem.Priority.HIGH: 7,
+    ActionItem.Priority.MEDIUM: 14,
+    ActionItem.Priority.LOW: 30,
+}
+
+
+def _automatic_action_due_date(action):
+    if action.due_date:
+        return action.due_date
+
+    base_date = action.created_at.date()
+    days = PRIORITY_DUE_DAYS.get(action.priority, 14)
+    return base_date + timedelta(days=days)
+
+
+def _enrich_action_due_state(action, today=None):
+    today = today or timezone.localdate()
+
+    if action.status not in OPEN_ACTION_STATUSES:
+        action.auto_due_date = None
+        action.is_overdue = False
+        action.due_state_label = "—"
+        action.due_badge_class = "secondary"
+        return action
+
+    due_date = _automatic_action_due_date(action)
+    delta_days = (due_date - today).days
+
+    action.auto_due_date = due_date
+    action.days_until_due = delta_days
+    action.is_overdue = delta_days < 0
+
+    if delta_days < 0:
+        action.due_state_label = f"Überfällig seit {abs(delta_days)} Tag(en)"
+        action.due_badge_class = "danger"
+    elif delta_days == 0:
+        action.due_state_label = "Heute fällig"
+        action.due_badge_class = "warning"
+    elif delta_days <= 14:
+        action.due_state_label = f"Fällig in {delta_days} Tag(en)"
+        action.due_badge_class = "warning"
+    else:
+        action.due_state_label = f"Noch {delta_days} Tag(e)"
+        action.due_badge_class = "secondary"
+
+    return action
+
+
 def _apply_sorting(qs, request):
     sort = request.GET.get("sort", "status_open_priority")
 
     qs = qs.annotate(
         status_group_sort=Case(
-            When(status__in=[
-                ActionItem.Status.OPEN,
-                ActionItem.Status.IN_PROGRESS,
-                ActionItem.Status.WAITING,
-                ActionItem.Status.FOLLOW_UP,
-            ], then=Value(0)),
+            When(status__in=OPEN_ACTION_STATUSES, then=Value(0)),
             When(status=ActionItem.Status.COMPLETED, then=Value(1)),
             When(status=ActionItem.Status.IRRELEVANT, then=Value(2)),
             default=Value(3),
@@ -234,10 +287,13 @@ def _build_context_hint(item):
     return " | ".join(hints)
 
 
+
 @login_required
 def action_list(request):
     show_history = request.GET.get("show_history") == "1"
     processing_id = request.GET.get("processing_id", "").strip()
+    overdue_filter = request.GET.get("overdue", "").strip()
+    priority_filter = request.GET.get("priority", "").strip()
     selected_processing = None
 
     qs = _tenant_filtered_action_queryset(request)
@@ -249,20 +305,18 @@ def action_list(request):
             | Q(related_legal_assessment__processing_activity_id=processing_id)
         )
 
-    if not show_history:
-        qs = qs.filter(
-            status__in=[
-                ActionItem.Status.OPEN,
-                ActionItem.Status.IN_PROGRESS,
-                ActionItem.Status.WAITING,
-                ActionItem.Status.FOLLOW_UP,
-            ]
-        )
+    if priority_filter:
+        qs = qs.filter(priority=priority_filter)
+
+    if not show_history or overdue_filter == "1":
+        qs = qs.filter(status__in=OPEN_ACTION_STATUSES)
 
     qs = _apply_sorting(qs, request)
     items = list(qs)
 
+    today = timezone.localdate()
     for item in items:
+        _enrich_action_due_state(item, today=today)
         item.resolved_target_area = _resolve_action_target_area(item)
         item.action_button_label = _get_action_button_label(item)
         item.status_badge_class = _get_status_badge_class(item)
@@ -273,6 +327,10 @@ def action_list(request):
             and item.related_processing_activity.status == "archived"
         )
 
+    if overdue_filter == "1":
+        items = [item for item in items if item.is_overdue]
+        items.sort(key=lambda item: (item.auto_due_date, item.get_priority_display(), item.title))
+
     return render(
         request,
         "actions/list.html",
@@ -282,6 +340,9 @@ def action_list(request):
             "show_history": show_history,
             "processing_id": processing_id,
             "selected_processing": selected_processing,
+            "overdue_filter": overdue_filter,
+            "priority_filter": priority_filter,
+            "priority_choices": ActionItem.Priority.choices,
         },
     )
 

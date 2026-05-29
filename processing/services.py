@@ -125,7 +125,7 @@ def generate_processing_actions(processing_activity):
                 'Im Verfahren ist das Feld "Verantwortliche Person" noch leer. '
                 "Bitte die verantwortliche Person ergänzen."
             ),
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.MEDIUM,
         )
         if created:
             result["created_count"] += 1
@@ -142,7 +142,7 @@ def generate_processing_actions(processing_activity):
                 'Im Verfahren steht das Feld "Bewertungsstatus" noch nicht auf '
                 '"Abgeschlossen". Bitte die Bewertung vervollständigen.'
             ),
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.MEDIUM,
         )
         if created:
             result["created_count"] += 1
@@ -173,7 +173,7 @@ def generate_processing_actions(processing_activity):
             processing_activity=processing_activity,
             title='Feld "Zweck der Verarbeitung" ausfüllen',
             description='Im Verfahren ist das Feld "Zweck der Verarbeitung" noch leer.',
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.LOW,
         )
         if created:
             result["created_count"] += 1
@@ -187,7 +187,7 @@ def generate_processing_actions(processing_activity):
             processing_activity=processing_activity,
             title='Feld "Beschreibung" ausfüllen',
             description='Im Verfahren ist das Feld "Beschreibung" noch leer.',
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.LOW,
         )
         if created:
             result["created_count"] += 1
@@ -201,7 +201,7 @@ def generate_processing_actions(processing_activity):
             processing_activity=processing_activity,
             title='Feld "Betroffene Personen" ausfüllen',
             description='Im Verfahren ist das Feld "Betroffene Personen" noch leer.',
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.LOW,
         )
         if created:
             result["created_count"] += 1
@@ -215,7 +215,7 @@ def generate_processing_actions(processing_activity):
             processing_activity=processing_activity,
             title='Feld "Kategorien personenbezogener Daten" ausfüllen',
             description='Im Verfahren ist das Feld "Kategorien personenbezogener Daten" noch leer.',
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.LOW,
         )
         if created:
             result["created_count"] += 1
@@ -445,95 +445,6 @@ def _resolve_department_for_template(*, tenant, template):
     ).first()
 
 
-def _normalize_text(value):
-    return (value or "").strip()
-
-
-def _template_activity_has_blocking_relations(processing_activity):
-    if processing_activity.documents.exists():
-        return True
-
-    if hasattr(processing_activity, "legal_record"):
-        return True
-
-    if hasattr(processing_activity, "dpia_check"):
-        return True
-
-    if hasattr(processing_activity, "dpia"):
-        return True
-
-    return ActionItem.objects.filter(
-        related_processing_activity=processing_activity,
-    ).exclude(
-        source_type=ActionItem.SourceType.PROCESSING,
-    ).exists()
-
-
-def _is_template_generated_activity_clean(processing_activity, template):
-    if processing_activity.template_origin_id != template.pk:
-        return False
-
-    comparable_fields = [
-        "title",
-        "purpose",
-        "description",
-        "data_subject_categories",
-        "personal_data_categories",
-        "recipients",
-        "retention_period",
-        "tom_summary",
-    ]
-
-    for field_name in comparable_fields:
-        if _normalize_text(getattr(processing_activity, field_name, "")) != _normalize_text(getattr(template, field_name, "")):
-            return False
-
-    if _normalize_text(getattr(processing_activity, "responsible_person", "")):
-        return False
-
-    if _normalize_text(getattr(processing_activity, "standard_case_note", "")):
-        return False
-
-    if getattr(processing_activity, "special_category_data", False):
-        return False
-
-    if _normalize_text(getattr(processing_activity, "special_category_description", "")):
-        return False
-
-    if getattr(processing_activity, "third_country_transfer", False):
-        return False
-
-    if _normalize_text(getattr(processing_activity, "third_country_description", "")):
-        return False
-
-    if getattr(processing_activity, "third_party_info_required", False):
-        return False
-
-    if _template_activity_has_blocking_relations(processing_activity):
-        return False
-
-    return True
-
-
-def _remove_or_archive_template_activity(*, processing_activity, template, user=None):
-    if _is_template_generated_activity_clean(processing_activity, template):
-        ActionItem.objects.filter(
-            related_processing_activity=processing_activity,
-            source_type=ActionItem.SourceType.PROCESSING,
-        ).delete()
-        processing_activity.delete()
-        return "deleted"
-
-    if processing_activity.status != ProcessingActivity.Status.ARCHIVED:
-        archive_processing_activity(
-            processing_activity=processing_activity,
-            user=user,
-        )
-        return "archived"
-
-    return "unchanged"
-
-
 def create_processing_activity_from_template(*, tenant, template, user=None):
     department = _resolve_department_for_template(tenant=tenant, template=template)
 
@@ -570,30 +481,15 @@ def sync_tenant_processing_templates(*, tenant, user=None):
             defaults={"is_enabled": True},
         )
 
-        existing_activity = (
-            ProcessingActivity.objects.filter(
-                tenant=tenant,
-                template_origin=template,
-            )
-            .order_by("pk")
-            .first()
-        )
-
         if not setting.is_enabled:
-            if existing_activity:
-                _remove_or_archive_template_activity(
-                    processing_activity=existing_activity,
-                    template=template,
-                    user=user,
-                )
             continue
 
-        if existing_activity:
-            if existing_activity.status == ProcessingActivity.Status.ARCHIVED:
-                reactivate_processing_activity(
-                    processing_activity=existing_activity,
-                    user=user,
-                )
+        exists = ProcessingActivity.objects.filter(
+            tenant=tenant,
+            template_origin=template,
+        ).exists()
+
+        if exists:
             continue
 
         create_processing_activity_from_template(
@@ -601,6 +497,7 @@ def sync_tenant_processing_templates(*, tenant, user=None):
             template=template,
             user=user,
         )
+
 
 def archive_processing_activity(*, processing_activity, user=None):
     processing_activity.status = ProcessingActivity.Status.ARCHIVED

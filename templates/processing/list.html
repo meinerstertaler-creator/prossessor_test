@@ -198,6 +198,14 @@
                         <option value="due" {% if reminder == "due" %}selected{% endif %}>Fällig</option>
                     </select>
                 </div>
+
+                <div class="col-12 col-sm-6 col-lg-2">
+                    <label class="form-label" for="id_overdue_actions">Maßnahmen</label>
+                    <select name="overdue_actions" id="id_overdue_actions" class="form-select">
+                        <option value="">Alle</option>
+                        <option value="1" {% if overdue_actions_filter == "1" %}selected{% endif %}>Mit überfälligen Maßnahmen</option>
+                    </select>
+                </div>
             </div>
 
             <div class="mt-3 d-flex flex-wrap gap-2">
@@ -233,6 +241,7 @@
                             <th class="text-nowrap px-3 py-3 col-thirdcountry resizable-column">Drittlandtransfer</th>
                             <th class="px-3 py-3 col-department resizable-column">Fachbereich</th>
                             <th class="px-3 py-3 col-documents resizable-column">Dokumente</th>
+                            <th class="px-3 py-3 col-documents resizable-column">Maßnahmen</th>
                             <th class="text-nowrap px-3 py-3 col-origin resizable-column">Herkunft</th>
                             <th class="px-3 py-3 col-archived resizable-column">Archiviert</th>
                         </tr>
@@ -369,6 +378,24 @@
                                                 <span class="badge text-bg-secondary">0</span>
                                             {% endif %}
                                         {% endwith %}
+                                    </div>
+                                </td>
+
+                                <td class="px-3">
+                                    <div class="col-documents resizable-column">
+                                        {% if item.overdue_action_count %}
+                                            <a href="{% url 'action_list' %}?processing_id={{ item.pk }}&overdue=1" class="text-decoration-none">
+                                                <span class="badge text-bg-danger">{{ item.overdue_action_count }}</span>
+                                                <span class="small">überfällig</span>
+                                            </a>
+                                        {% elif item.open_action_count %}
+                                            <a href="{% url 'action_list' %}?processing_id={{ item.pk }}" class="text-decoration-none">
+                                                <span class="badge text-bg-warning">{{ item.open_action_count }}</span>
+                                                <span class="small">offen</span>
+                                            </a>
+                                        {% else %}
+                                            <span class="badge text-bg-secondary">0</span>
+                                        {% endif %}
                                     </div>
                                 </td>
 

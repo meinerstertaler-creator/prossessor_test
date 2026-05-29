@@ -7,7 +7,15 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h1 class="h3 mb-1">Dokumente</h1>
-        <p class="text-muted mb-0">Zentrale Dokumentenverwaltung</p>
+        <p class="text-muted mb-0">
+            {% if current_folder %}
+                Ordner: {{ current_folder.name }}
+            {% elif selected_folder == "all" %}
+                Alle Dokumente
+            {% else %}
+                Startansicht: Hauptordner und Dokumente ohne Ordner
+            {% endif %}
+        </p>
     </div>
 
     <a href="{% url 'document_upload' %}" class="btn btn-primary">
@@ -16,7 +24,13 @@
 </div>
 
 <form method="get" class="row g-3 mb-4">
-    <div class="col-md-4">
+    {% if selected_folder == "all" %}
+        <input type="hidden" name="folder" value="all">
+    {% elif current_folder %}
+        <input type="hidden" name="folder" value="{{ current_folder.pk }}">
+    {% endif %}
+
+    <div class="col-md-6">
         <input type="text"
                name="q"
                value="{{ search }}"
@@ -24,19 +38,7 @@
                placeholder="Suche nach Titel, Beschreibung, Version...">
     </div>
 
-    <div class="col-md-3">
-        <select name="folder" class="form-select">
-            <option value="">Alle Ordner</option>
-            {% for folder in folders %}
-                <option value="{{ folder.id }}"
-                    {% if folder.id|stringformat:"s" == selected_folder %}selected{% endif %}>
-                    {{ folder.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="col-md-3">
+    <div class="col-md-4">
         <select name="label" class="form-select">
             <option value="">Alle Labels</option>
             {% for label in labels %}
@@ -53,8 +55,105 @@
     </div>
 </form>
 
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h2 class="h5 mb-1">
+                    {% if current_folder %}
+                        Inhalt von „{{ current_folder.name }}“
+                    {% else %}
+                        Ordner
+                    {% endif %}
+                </h2>
+                <div class="small text-muted">
+                    {% if current_folder %}
+                        Angezeigt werden nur direkte Unterordner und Dokumente dieses Ordners.
+                    {% else %}
+                        Hauptordner öffnen oder unten Dokumente ohne Ordner bearbeiten.
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-flex flex-wrap gap-2">
+                {% if current_folder %}
+                    {% if parent_folder %}
+                        <a href="{% url 'document_list' %}?folder={{ parent_folder.pk }}&q={{ search }}&label={{ selected_label }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            ← Zurück zu {{ parent_folder.name }}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'document_list' %}?q={{ search }}&label={{ selected_label }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            ← Zurück zur Startansicht
+                        </a>
+                    {% endif %}
+                {% elif selected_folder == "all" %}
+                    <a href="{% url 'document_list' %}?q={{ search }}&label={{ selected_label }}"
+                       class="btn btn-sm btn-outline-secondary">
+                        Startansicht
+                    </a>
+                {% endif %}
+
+                <a href="{% url 'document_list' %}?folder=all&q={{ search }}&label={{ selected_label }}"
+                   class="btn btn-sm {% if selected_folder == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    Alle Dokumente
+                </a>
+            </div>
+        </div>
+
+        {% if child_folders %}
+            <div class="row g-3">
+                {% for folder in child_folders %}
+                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
+                        <a href="{% url 'document_list' %}?folder={{ folder.pk }}&q={{ search }}&label={{ selected_label }}"
+                           class="text-decoration-none">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-start gap-3">
+                                        <div class="fs-3">▣</div>
+                                        <div>
+                                            <div class="fw-semibold">{{ folder.name }}</div>
+                                            <div class="small text-muted">
+                                                Ordner öffnen
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-muted small">
+                Keine Unterordner vorhanden.
+            </div>
+        {% endif %}
+    </div>
+</div>
+
 <div class="card">
     <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h2 class="h5 mb-0">
+                {% if current_folder %}
+                    Dokumente direkt in „{{ current_folder.name }}“
+                {% elif selected_folder == "all" %}
+                    Alle Dokumente
+                {% else %}
+                    Dokumente ohne Ordner
+                {% endif %}
+            </h2>
+
+            {% if selected_folder != "all" %}
+                <a href="{% url 'document_list' %}?folder=all&q={{ search }}&label={{ selected_label }}"
+                   class="btn btn-sm btn-outline-secondary">
+                    Alle Dokumente anzeigen
+                </a>
+            {% endif %}
+        </div>
+
         {% if items %}
             <div class="table-responsive">
                 <table class="table table-striped table-hover align-middle">

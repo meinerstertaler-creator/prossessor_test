@@ -1,3 +1,4 @@
+
 {% extends "base.html" %}
 
 {% block title %}Dashboard{% endblock %}
@@ -25,38 +26,45 @@
     </div>
 
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <div class="text-muted small">Offene Maßnahmen</div>
-                <div class="fs-3 fw-bold">{{ open_actions_count }}</div>
+        <a href="{% url 'action_list' %}" class="text-decoration-none text-reset">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Offene Maßnahmen</div>
+                    <div class="fs-3 fw-bold">{{ open_actions_count }}</div>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 
     <div class="col-md-3">
-        <div class="card">
-            <div class="card-body">
-                <div class="text-muted small">Audittermine ≤ 14 Tage</div>
-                <div class="fs-3 fw-bold">{{ audit_deadlines_count }}</div>
+        <a href="{% url 'action_list' %}?overdue=1" class="text-decoration-none text-reset">
+            <div class="card h-100 border-danger-subtle">
+                <div class="card-body">
+                    <div class="text-muted small">Überfällige Maßnahmen</div>
+                    <div class="fs-3 fw-bold text-danger">{{ overdue_actions_count }}</div>
+                </div>
             </div>
-        </div>
+        </a>
     </div>
 </div>
 
 <div class="row g-4">
-
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h2 class="h5">Überfällige Maßnahmen</h2>
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-3">
+                    <h2 class="h5 mb-0">Überfällige Maßnahmen</h2>
+                    <a href="{% url 'action_list' %}?overdue=1" class="btn btn-sm btn-outline-danger">Alle anzeigen</a>
+                </div>
                 {% if overdue_actions %}
                     <ul class="list-group list-group-flush">
                         {% for item in overdue_actions %}
                             <li class="list-group-item px-0">
                                 <a href="{% url 'action_detail' item.pk %}">{{ item.title }}</a><br>
                                 <small class="text-muted">
-                                    Frist: {{ item.due_date|date:"d.m.Y" }} |
-                                    Status: {{ item.get_status_display }}
+                                    Automatische Frist: {{ item.auto_due_date|date:"d.m.Y" }} |
+                                    {{ item.get_priority_display }} |
+                                    {{ item.get_status_display }}
                                 </small>
                             </li>
                         {% endfor %}
@@ -71,67 +79,20 @@
     <div class="col-lg-6">
         <div class="card h-100">
             <div class="card-body">
-                <h2 class="h5">Wiedervorlagen ≤ 14 Tage</h2>
-                {% if follow_up_actions %}
+                <h2 class="h5">Zuletzt erzeugte Maßnahmen</h2>
+                {% if recent_actions %}
                     <ul class="list-group list-group-flush">
-                        {% for item in follow_up_actions %}
+                        {% for item in recent_actions %}
                             <li class="list-group-item px-0">
                                 <a href="{% url 'action_detail' item.pk %}">{{ item.title }}</a><br>
                                 <small class="text-muted">
-                                    Wiedervorlage: {{ item.follow_up_date|date:"d.m.Y" }} |
-                                    Status: {{ item.get_status_display }}
+                                    {{ item.created_at|date:"d.m.Y H:i" }} | {{ item.get_status_display }}
                                 </small>
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p class="mb-0">Keine Wiedervorlagen in den nächsten 14 Tagen.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Maßnahmen mit Frist ≤ 14 Tage</h2>
-                {% if due_actions %}
-                    <ul class="list-group list-group-flush">
-                        {% for item in due_actions %}
-                            <li class="list-group-item px-0">
-                                <a href="{% url 'action_detail' item.pk %}">{{ item.title }}</a><br>
-                                <small class="text-muted">
-                                    Frist: {{ item.due_date|date:"d.m.Y" }} |
-                                    Status: {{ item.get_status_display }}
-                                </small>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="mb-0">Keine Fristen in den nächsten 14 Tagen.</p>
-                {% endif %}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-6">
-        <div class="card h-100">
-            <div class="card-body">
-                <h2 class="h5">Audittermine ≤ 14 Tage</h2>
-                {% if audit_deadlines %}
-                    <ul class="list-group list-group-flush">
-                        {% for item in audit_deadlines %}
-                            <li class="list-group-item px-0">
-                                <a href="{% url 'audit_detail' item.pk %}">{{ item.processor.name }} / {{ item.audit_year }}</a><br>
-                                <small class="text-muted">
-                                    Fällig: {{ item.due_date|date:"d.m.Y" }} |
-                                    Status: {{ item.get_status_display }}
-                                </small>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% else %}
-                    <p class="mb-0">Keine Audittermine in den nächsten 14 Tagen.</p>
+                    <p class="mb-0">Keine Maßnahmen vorhanden.</p>
                 {% endif %}
             </div>
         </div>
@@ -140,24 +101,23 @@
     <div class="col-12">
         <div class="card">
             <div class="card-body">
-                <h2 class="h5">Nächste Audit-Wiedervorlagen</h2>
-                {% if next_audit_reviews %}
+                <h2 class="h5">Zuletzt bearbeitete Verfahren</h2>
+                {% if recent_processing %}
                     <ul class="list-group list-group-flush">
-                        {% for item in next_audit_reviews %}
+                        {% for item in recent_processing %}
                             <li class="list-group-item px-0">
-                                <a href="{% url 'audit_detail' item.pk %}">{{ item.processor.name }} / {{ item.audit_year }}</a><br>
+                                <a href="{% url 'processing_detail' item.pk %}">{{ item.title }}</a><br>
                                 <small class="text-muted">
-                                    Nächste Prüfung: {{ item.next_review_date|date:"d.m.Y" }}
+                                    zuletzt geändert: {{ item.updated_at|date:"d.m.Y H:i" }}
                                 </small>
                             </li>
                         {% endfor %}
                     </ul>
                 {% else %}
-                    <p class="mb-0">Keine Audit-Wiedervorlagen in den nächsten 14 Tagen.</p>
+                    <p class="mb-0">Keine Verfahren vorhanden.</p>
                 {% endif %}
             </div>
         </div>
     </div>
-
 </div>
 {% endblock %}

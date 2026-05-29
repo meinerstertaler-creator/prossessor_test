@@ -94,7 +94,7 @@ def generate_legal_assessment_actions(assessment):
                 'In der Rechtsbewertung ist das Feld "Juristische Bewertung" noch leer. '
                 "Bitte die textliche Rechtsbewertung eintragen."
             ),
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.MEDIUM,
             target_area=ActionItem.Area.LEGAL,
         )
         if created:
@@ -145,7 +145,7 @@ def generate_legal_assessment_actions(assessment):
                 "Die Verarbeitung stützt sich auf berechtigte Interessen, "
                 "aber die erforderliche Interessenabwägung ist noch nicht als abgeschlossen dokumentiert."
             ),
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.MEDIUM,
             target_area=ActionItem.Area.LEGAL,
         )
         if created:
@@ -197,7 +197,7 @@ def generate_legal_assessment_actions(assessment):
                 "Es liegt weder ein Ergebnis der DSFA-Prüfung vor noch ist dokumentiert, "
                 "warum kein gesonderter DSFA-Check erforderlich ist."
             ),
-            priority=ActionItem.Priority.HIGH,
+            priority=ActionItem.Priority.MEDIUM,
             target_area=ActionItem.Area.LEGAL,
         )
         if created:
@@ -300,7 +300,6 @@ def _mark_action_irrelevant_if_exists(assessment, title: str):
 def close_resolved_legal_assessment_actions(assessment):
     processing = assessment.processing_activity
     dpia_check = getattr(processing, "dpia_check", None)
-    dpia = getattr(processing, "dpia", None)
 
     if not _is_blank_text(assessment.legal_assessment_text):
         _close_action_if_exists(
@@ -374,16 +373,6 @@ def close_resolved_legal_assessment_actions(assessment):
         _close_action_if_exists(
             assessment,
             "Offene Rechtsfragen klären",
-        )
-
-    if (
-        assessment.no_dpia_check_required_reason
-        or (dpia_check and dpia_check.completed and dpia_check.recommendation == "not_required")
-        or (dpia and dpia.approved)
-    ):
-        _close_action_if_exists(
-            assessment,
-            "DSFA-Prüfung erneut durchführen",
         )
 
 

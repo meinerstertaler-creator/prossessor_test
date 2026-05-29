@@ -14,26 +14,6 @@ def _has_legal_no_dpia_override(processing_activity):
     return bool(legal_record and legal_record.no_dpia_check_required_reason)
 
 
-def _close_legal_dpia_reactivation_action(processing_activity):
-    legal_record = getattr(processing_activity, "legal_record", None)
-
-    if not legal_record:
-        return
-
-    ActionItem.objects.filter(
-        source_type=ActionItem.SourceType.LEGAL_ASSESSMENT,
-        related_processing_activity=processing_activity,
-        related_legal_assessment=legal_record,
-        title="DSFA-Prüfung erneut durchführen",
-        status__in=[
-            ActionItem.Status.OPEN,
-            ActionItem.Status.IN_PROGRESS,
-            ActionItem.Status.WAITING,
-            ActionItem.Status.FOLLOW_UP,
-        ],
-    ).update(status=ActionItem.Status.COMPLETED)
-
-
 def ensure_dpia_action_exists(
     *,
     processing_activity,
@@ -130,7 +110,7 @@ def generate_dpia_actions(*, processing_activity, dpia_check, dpia):
                     "In der DSFA-Prüfung fehlt noch eine Begründung für die Einschätzung "
                     "der DSFA-Relevanz bzw. des Risikoniveaus."
                 ),
-                priority=ActionItem.Priority.HIGH,
+                priority=ActionItem.Priority.MEDIUM,
             )
         )
 
@@ -158,7 +138,7 @@ def generate_dpia_actions(*, processing_activity, dpia_check, dpia):
                     "Die DSFA-Prüfung ist noch nicht als abgeschlossen markiert, obwohl "
                     "eine DSFA erforderlich oder empfohlen ist."
                 ),
-                priority=ActionItem.Priority.HIGH,
+                priority=ActionItem.Priority.MEDIUM,
             )
         )
 
@@ -183,7 +163,7 @@ def generate_dpia_actions(*, processing_activity, dpia_check, dpia):
                 description=(
                     "In der DSFA-Durchführung fehlt noch die Beschreibung der Verarbeitung."
                 ),
-                priority=ActionItem.Priority.HIGH,
+                priority=ActionItem.Priority.MEDIUM,
             )
         )
 
@@ -196,7 +176,7 @@ def generate_dpia_actions(*, processing_activity, dpia_check, dpia):
                     "In der DSFA-Durchführung fehlt noch die Bewertung von "
                     "Notwendigkeit und Verhältnismäßigkeit."
                 ),
-                priority=ActionItem.Priority.HIGH,
+                priority=ActionItem.Priority.MEDIUM,
             )
         )
 
@@ -208,7 +188,7 @@ def generate_dpia_actions(*, processing_activity, dpia_check, dpia):
                 description=(
                     "In der DSFA-Durchführung fehlt noch die Zusammenfassung bzw. das Ergebnis."
                 ),
-                priority=ActionItem.Priority.HIGH,
+                priority=ActionItem.Priority.MEDIUM,
             )
         )
 
@@ -220,7 +200,7 @@ def generate_dpia_actions(*, processing_activity, dpia_check, dpia):
                 description=(
                     "In der DSFA-Durchführung fehlt noch die Angabe zum Restrisiko."
                 ),
-                priority=ActionItem.Priority.MEDIUM,
+                priority=ActionItem.Priority.LOW,
             )
         )
 
@@ -262,7 +242,6 @@ def _mark_all_dpia_actions_irrelevant(processing_activity):
 def close_resolved_dpia_actions(*, processing_activity, dpia_check, dpia):
     if _has_legal_no_dpia_override(processing_activity):
         _mark_all_dpia_actions_irrelevant(processing_activity)
-        _close_legal_dpia_reactivation_action(processing_activity)
         return
 
     if dpia_check.recommendation == "not_checked":
@@ -315,9 +294,3 @@ def close_resolved_dpia_actions(*, processing_activity, dpia_check, dpia):
             processing_activity,
             "DSFA-Durchführung: Restrisiko ergänzen",
         )
-
-    if dpia_check.completed and dpia_check.recommendation == "not_required":
-        _close_legal_dpia_reactivation_action(processing_activity)
-
-    if dpia.approved:
-        _close_legal_dpia_reactivation_action(processing_activity)

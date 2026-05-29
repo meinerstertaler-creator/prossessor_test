@@ -1,3 +1,4 @@
+from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db.models import Case, IntegerField, Value, When
@@ -15,6 +16,62 @@ from .services import (
     generate_processing_actions,
     reactivate_processing_activity,
 )
+
+
+OPEN_ACTION_STATUSES = [
+    ActionItem.Status.OPEN,
+    ActionItem.Status.IN_PROGRESS,
+    ActionItem.Status.WAITING,
+    ActionItem.Status.FOLLOW_UP,
+]
+
+PRIORITY_DUE_DAYS = {
+    ActionItem.Priority.HIGH: 7,
+    ActionItem.Priority.MEDIUM: 14,
+    ActionItem.Priority.LOW: 30,
+}
+
+
+def _automatic_action_due_date(action):
+    if action.due_date:
+        return action.due_date
+
+    base_date = action.created_at.date()
+    days = PRIORITY_DUE_DAYS.get(action.priority, 14)
+    return base_date + timedelta(days=days)
+
+
+def _enrich_action_due_state(action, today=None):
+    today = today or timezone.localdate()
+
+    if action.status not in OPEN_ACTION_STATUSES:
+        action.auto_due_date = None
+        action.is_overdue = False
+        action.due_state_label = "—"
+        action.due_badge_class = "secondary"
+        return action
+
+    due_date = _automatic_action_due_date(action)
+    delta_days = (due_date - today).days
+
+    action.auto_due_date = due_date
+    action.days_until_due = delta_days
+    action.is_overdue = delta_days < 0
+
+    if delta_days < 0:
+        action.due_state_label = f"Überfällig seit {abs(delta_days)} Tag(en)"
+        action.due_badge_class = "danger"
+    elif delta_days == 0:
+        action.due_state_label = "Heute fällig"
+        action.due_badge_class = "warning"
+    elif delta_days <= 14:
+        action.due_state_label = f"Fällig in {delta_days} Tag(en)"
+        action.due_badge_class = "warning"
+    else:
+        action.due_state_label = f"Noch {delta_days} Tag(e)"
+        action.due_badge_class = "secondary"
+
+    return action
 
 
 def _tenant_filtered_processing_queryset(request):
@@ -196,6 +253,7 @@ def _document_status_badge_class(status):
     return "secondary"
 
 
+
 @login_required
 def processing_list(request):
     items = _tenant_filtered_processing_queryset(request)
@@ -206,6 +264,7 @@ def processing_list(request):
     review_status = request.GET.get("review_status", "").strip()
     third_party = request.GET.get("third_party", "").strip()
     reminder = request.GET.get("reminder", "").strip()
+    overdue_actions_filter = request.GET.get("overdue_actions", "").strip()
 
     if search:
         items = items.filter(title__icontains=search) | items.filter(internal_id__icontains=search)
@@ -226,17 +285,39 @@ def processing_list(request):
         items = items.filter(reminder_due_at__isnull=False)
 
     items = list(items)
+    today = timezone.localdate()
+
+    filtered_items = []
     for item in items:
         _enrich_processing_item_with_dpia_display(item)
 
+        open_actions = list(
+            ActionItem.objects.filter(
+                related_processing_activity=item,
+                status__in=OPEN_ACTION_STATUSES,
+            ).order_by("created_at")
+        )
+
+        for action in open_actions:
+            _enrich_action_due_state(action, today=today)
+
+        item.open_action_count = len(open_actions)
+        item.overdue_action_count = len([action for action in open_actions if action.is_overdue])
+
+        if overdue_actions_filter == "1" and item.overdue_action_count == 0:
+            continue
+
+        filtered_items.append(item)
+
     context = {
-        "items": items,
+        "items": filtered_items,
         "search": search,
         "status": status,
         "department": department,
         "review_status": review_status,
         "third_party": third_party,
         "reminder": reminder,
+        "overdue_actions_filter": overdue_actions_filter,
         "status_choices": ProcessingActivity.Status.choices,
         "review_status_choices": ProcessingActivity.ReviewStatus.choices,
         "departments": _available_departments_for_request(request),
@@ -375,7 +456,12 @@ def processing_detail(request, pk):
         .order_by("priority_sort", "due_date_is_null", "due_date", "title")
     )
 
-    open_action_count = open_actions.count()
+    open_actions = list(open_actions)
+    today = timezone.localdate()
+    for action in open_actions:
+        _enrich_action_due_state(action, today=today)
+
+    open_action_count = len(open_actions)
 
     review_completed = item.review_status == item.ReviewStatus.COMPLETED
     review_in_progress = item.review_status == item.ReviewStatus.IN_PROGRESS

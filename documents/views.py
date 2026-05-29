@@ -164,7 +164,7 @@ def _build_upload_context(request, extra=None):
 
 @login_required
 def document_list(request):
-    items = _get_permitted_documents(request)
+    base_items = _get_permitted_documents(request)
 
     folder_id = (request.GET.get("folder") or "").strip()
     label_id = (request.GET.get("label") or "").strip()
@@ -173,8 +173,25 @@ def document_list(request):
     folders = _get_available_folders_for_request(request)
     labels = _get_available_labels_for_request(request)
 
-    if folder_id:
-        items = items.filter(folder_id=folder_id)
+    current_folder = None
+    parent_folder = None
+    child_folders = folders.filter(parent__isnull=True)
+    selected_folder = "root"
+
+    if folder_id == "all":
+        selected_folder = "all"
+        items = base_items
+        child_folders = folders.filter(parent__isnull=True)
+
+    elif folder_id:
+        current_folder = get_object_or_404(folders, pk=folder_id)
+        parent_folder = current_folder.parent
+        child_folders = folders.filter(parent=current_folder)
+        selected_folder = str(current_folder.pk)
+        items = base_items.filter(folder=current_folder)
+
+    else:
+        items = base_items.filter(folder__isnull=True)
 
     if label_id:
         items = items.filter(labels__id=label_id)
@@ -187,6 +204,7 @@ def document_list(request):
         )
 
     items = items.distinct().order_by("title")
+    child_folders = child_folders.order_by("name")
 
     return render(
         request,
@@ -194,13 +212,15 @@ def document_list(request):
         {
             "items": items,
             "folders": folders,
+            "child_folders": child_folders,
+            "current_folder": current_folder,
+            "parent_folder": parent_folder,
             "labels": labels,
-            "selected_folder": folder_id,
+            "selected_folder": selected_folder,
             "selected_label": label_id,
             "search": search,
         },
     )
-
 
 @login_required
 def document_download(request, pk):
@@ -326,14 +346,14 @@ def document_upload(request):
 
         effective_tenant = _get_effective_document_tenant_for_request(request, posted_tenant_id)
 
-        if request.user.is_superuser:
-            if posted_tenant_id:
-                if effective_tenant is None:
-                    messages.error(request, "Der gewählte Mandant ist nicht zulässig.")
-                    return redirect("document_upload")
-                document.tenant = effective_tenant
-        else:
-            document.tenant = effective_tenant
+        if effective_tenant is None:
+            messages.error(
+                request,
+                "Bitte einen aktiven Mandanten setzen oder einen Mandanten auswählen.",
+            )
+            return redirect("document_upload")
+
+        document.tenant = effective_tenant
 
         if folder_id:
             try:
