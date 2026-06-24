@@ -2,241 +2,592 @@
 
 {% block title %}Dokumente{% endblock %}
 
+{% block extra_head %}
+<style>
+    .documents-shell {
+        display: grid;
+        grid-template-columns: 285px minmax(0, 1fr);
+        gap: 1.25rem;
+        align-items: start;
+    }
+
+    .documents-shell.tree-collapsed {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .documents-shell.tree-collapsed .documents-sidebar {
+        display: none;
+    }
+
+    .documents-sidebar {
+        position: sticky;
+        top: 86px;
+        border: 1px solid rgba(0, 0, 0, 0.09);
+        border-radius: 16px;
+        background: #f7f7f5;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+        overflow: hidden;
+    }
+
+    .documents-sidebar-header {
+        background: #1b1b1b;
+        color: #ffffff;
+        padding: 0.85rem 1rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.82rem;
+    }
+
+    .documents-tree {
+        padding: 0.75rem;
+    }
+
+    .tree-link {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        min-height: 34px;
+        border-radius: 10px;
+        padding: 0.38rem 0.5rem;
+        color: #212529;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: background 0.12s ease, opacity 0.12s ease, color 0.12s ease;
+    }
+
+    .tree-link:hover {
+        background: #ffffff;
+        color: #000000;
+        border-color: rgba(255, 132, 0, 0.25);
+    }
+
+    .tree-link.current {
+        background: rgba(255, 132, 0, 0.13);
+        border-color: rgba(255, 132, 0, 0.45);
+        color: #000000;
+        font-weight: 700;
+    }
+
+    .tree-link.active-path:not(.current) {
+        background: rgba(255, 132, 0, 0.055);
+        color: #000000;
+        font-weight: 600;
+    }
+
+    .tree-link.dimmed {
+        opacity: 0.38;
+        filter: grayscale(1);
+    }
+
+    .tree-link.dimmed:hover {
+        opacity: 0.74;
+        filter: grayscale(0.35);
+    }
+
+    .tree-root {
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .tree-folder-icon {
+        width: 18px;
+        height: 14px;
+        margin-top: 0.2rem;
+        border-radius: 4px 4px 5px 5px;
+        background: linear-gradient(180deg, #ffbc4b 0%, #ff8400 100%);
+        position: relative;
+        flex: 0 0 auto;
+        box-shadow: inset 0 -3px 5px rgba(0, 0, 0, 0.10);
+    }
+
+    .tree-folder-icon::before {
+        content: "";
+        position: absolute;
+        left: 2px;
+        top: -4px;
+        width: 8px;
+        height: 5px;
+        border-radius: 4px 4px 0 0;
+        background: #ffc76b;
+    }
+
+    .tree-label {
+        min-width: 0;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: normal;
+        font-size: 0.88rem;
+        line-height: 1.25;
+    }
+
+    .documents-main {
+        min-width: 0;
+    }
+
+    .document-toolbar,
+    .breadcrumb-card {
+        background: #ffffff;
+        border: 1px solid rgba(0, 0, 0, 0.075);
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+    }
+
+    .folder-toggle-btn {
+        border-color: rgba(255, 132, 0, 0.45);
+    }
+
+    .folder-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 0.85rem;
+    }
+
+    .folder-card {
+        display: block;
+        height: 100%;
+        color: inherit;
+        text-decoration: none;
+        background: linear-gradient(180deg, #ffffff 0%, #f8f9fb 100%);
+        border: 1px solid rgba(0, 0, 0, 0.09);
+        border-radius: 16px;
+        padding: 0.9rem;
+        box-shadow: 0 8px 22px rgba(15, 23, 42, 0.04);
+        transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .folder-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08);
+        border-color: rgba(255, 132, 0, 0.50);
+        color: inherit;
+    }
+
+    .folder-card:hover::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 4px;
+        background: #ff8400;
+    }
+
+    .folder-icon {
+        width: 42px;
+        height: 34px;
+        border-radius: 9px 9px 11px 11px;
+        background: linear-gradient(180deg, #ffd58a 0%, #ffad33 100%);
+        position: relative;
+        box-shadow: inset 0 -7px 12px rgba(0, 0, 0, 0.08);
+        flex: 0 0 auto;
+    }
+
+    .folder-icon::before {
+        content: "";
+        position: absolute;
+        left: 5px;
+        top: -7px;
+        width: 19px;
+        height: 9px;
+        border-radius: 7px 7px 0 0;
+        background: #ffc15a;
+    }
+
+    .folder-title {
+        font-weight: 700;
+        line-height: 1.2;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        word-break: normal;
+    }
+
+    .folder-subtitle,
+    .document-meta {
+        font-size: 0.78rem;
+        color: #6c757d;
+    }
+
+    .current-folder-display {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        min-width: 0;
+    }
+
+    .current-folder-display .folder-icon {
+        width: 36px;
+        height: 29px;
+    }
+
+    .current-folder-name {
+        font-weight: 700;
+        overflow-wrap: anywhere;
+    }
+
+    .documents-card {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+    }
+
+    .documents-table th {
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: #6c757d;
+        background: #f8f9fb;
+    }
+
+    .documents-table td {
+        vertical-align: middle;
+    }
+
+    .document-title {
+        font-weight: 650;
+    }
+
+    .info-strip {
+        border: 1px solid rgba(255, 132, 0, 0.35);
+        background: rgba(255, 132, 0, 0.045);
+        border-radius: 12px;
+        padding: 0.75rem 0.9rem;
+    }
+
+    @media (max-width: 991.98px) {
+        .documents-shell {
+            display: block;
+        }
+
+        .documents-sidebar {
+            position: static;
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
         <h1 class="h3 mb-1">Dokumente</h1>
         <p class="text-muted mb-0">
-            {% if current_folder %}
+            {% if is_search_mode %}
+                Suchergebnis für „{{ search }}“ in allen Ordnern
+            {% elif current_folder %}
                 Ordner: {{ current_folder.name }}
             {% elif selected_folder == "all" %}
                 Alle Dokumente
             {% else %}
-                Startansicht: Hauptordner und Dokumente ohne Ordner
+                Startansicht mit Hauptordnern und Dokumenten ohne Ordner
             {% endif %}
         </p>
     </div>
 
-    <a href="{% url 'document_upload' %}" class="btn btn-primary">
-        + Dokument hochladen
-    </a>
+    <div class="d-flex flex-wrap gap-2">
+        <button type="button"
+                id="toggle-folder-tree"
+                class="btn btn-outline-secondary folder-toggle-btn">
+            Ordnerstruktur ausblenden
+        </button>
+
+        <a href="{% url 'document_upload' %}" class="btn btn-primary">
+            + Dokument hochladen
+        </a>
+    </div>
 </div>
 
-<form method="get" class="row g-3 mb-4">
-    {% if selected_folder == "all" %}
-        <input type="hidden" name="folder" value="all">
-    {% elif current_folder %}
-        <input type="hidden" name="folder" value="{{ current_folder.pk }}">
-    {% endif %}
-
-    <div class="col-md-6">
-        <input type="text"
-               name="q"
-               value="{{ search }}"
-               class="form-control"
-               placeholder="Suche nach Titel, Beschreibung, Version...">
-    </div>
-
-    <div class="col-md-4">
-        <select name="label" class="form-select">
-            <option value="">Alle Labels</option>
-            {% for label in labels %}
-                <option value="{{ label.id }}"
-                    {% if label.id|stringformat:"s" == selected_label %}selected{% endif %}>
-                    {{ label.name }}
-                </option>
-            {% endfor %}
-        </select>
-    </div>
-
-    <div class="col-md-2 d-flex gap-2">
-        <button class="btn btn-primary w-100">Filtern</button>
-    </div>
-</form>
-
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <div>
-                <h2 class="h5 mb-1">
-                    {% if current_folder %}
-                        Inhalt von „{{ current_folder.name }}“
-                    {% else %}
-                        Ordner
-                    {% endif %}
-                </h2>
-                <div class="small text-muted">
-                    {% if current_folder %}
-                        Angezeigt werden nur direkte Unterordner und Dokumente dieses Ordners.
-                    {% else %}
-                        Hauptordner öffnen oder unten Dokumente ohne Ordner bearbeiten.
-                    {% endif %}
-                </div>
-            </div>
-
-            <div class="d-flex flex-wrap gap-2">
-                {% if current_folder %}
-                    {% if parent_folder %}
-                        <a href="{% url 'document_list' %}?folder={{ parent_folder.pk }}&q={{ search }}&label={{ selected_label }}"
-                           class="btn btn-sm btn-outline-secondary">
-                            ← Zurück zu {{ parent_folder.name }}
-                        </a>
-                    {% else %}
-                        <a href="{% url 'document_list' %}?q={{ search }}&label={{ selected_label }}"
-                           class="btn btn-sm btn-outline-secondary">
-                            ← Zurück zur Startansicht
-                        </a>
-                    {% endif %}
-                {% elif selected_folder == "all" %}
-                    <a href="{% url 'document_list' %}?q={{ search }}&label={{ selected_label }}"
-                       class="btn btn-sm btn-outline-secondary">
-                        Startansicht
-                    </a>
-                {% endif %}
-
-                <a href="{% url 'document_list' %}?folder=all&q={{ search }}&label={{ selected_label }}"
-                   class="btn btn-sm {% if selected_folder == 'all' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                    Alle Dokumente
-                </a>
-            </div>
+<div id="documents-shell" class="documents-shell">
+    <aside class="documents-sidebar">
+        <div class="documents-sidebar-header">
+            Ordnerstruktur
         </div>
 
-        {% if child_folders %}
-            <div class="row g-3">
-                {% for folder in child_folders %}
-                    <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        <a href="{% url 'document_list' %}?folder={{ folder.pk }}&q={{ search }}&label={{ selected_label }}"
-                           class="text-decoration-none">
-                            <div class="card h-100">
-                                <div class="card-body">
-                                    <div class="d-flex align-items-start gap-3">
-                                        <div class="fs-3">▣</div>
-                                        <div>
-                                            <div class="fw-semibold">{{ folder.name }}</div>
-                                            <div class="small text-muted">
-                                                Ordner öffnen
-                                            </div>
-                                        </div>
-                                    </div>
+        <div class="documents-tree">
+            <a href="{% url 'document_list' %}?q={{ search }}&label={{ selected_label }}"
+               class="tree-link tree-root {% if selected_folder == 'root' %}current{% endif %}">
+                <span class="tree-folder-icon"></span>
+                <span class="tree-label">Dokumente</span>
+            </a>
+
+            {% for node in folder_tree_nodes %}
+                <a href="{% url 'document_list' %}{{ node.href }}{% if search %}{% if '?' in node.href %}&{% else %}?{% endif %}q={{ search }}{% endif %}{% if selected_label %}{% if '?' in node.href or search %}&{% else %}?{% endif %}label={{ selected_label }}{% endif %}"
+                   class="tree-link {% if node.is_current %}current{% elif node.is_active_path %}active-path{% endif %} {% if node.is_dimmed %}dimmed{% endif %}"
+                   style="margin-left: {{ node.indent }}px;">
+                    <span class="tree-folder-icon"></span>
+                    <span class="tree-label" title="{{ node.folder.name }}">{{ node.folder.name }}</span>
+                </a>
+            {% empty %}
+                <div class="text-muted small px-2 py-2">
+                    Noch keine Ordner angelegt.
+                </div>
+            {% endfor %}
+        </div>
+    </aside>
+
+    <main class="documents-main">
+        <div class="document-toolbar mb-4">
+            <form method="get" class="row g-3 align-items-end">
+                {% if selected_folder == "all" and not search %}
+                    <input type="hidden" name="folder" value="all">
+                {% elif current_folder and not search %}
+                    <input type="hidden" name="folder" value="{{ current_folder.pk }}">
+                {% endif %}
+
+                <div class="col-md-6">
+                    <label class="form-label small text-muted" for="id_q">Suche</label>
+                    <input type="text"
+                           id="id_q"
+                           name="q"
+                           value="{{ search }}"
+                           class="form-control"
+                           placeholder="Globale Suche in allen Ordnern...">
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label small text-muted" for="id_label">Label</label>
+                    <select name="label" id="id_label" class="form-select">
+                        <option value="">Alle Labels</option>
+                        {% for label in labels %}
+                            <option value="{{ label.id }}"
+                                {% if label.id|stringformat:"s" == selected_label %}selected{% endif %}>
+                                {{ label.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100">Suchen</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="breadcrumb-card mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div>
+                    {% if is_search_mode %}
+                        <div class="small text-muted">Suchmodus</div>
+                        <div class="fw-semibold">Treffer in allen Ordnern</div>
+                    {% elif current_folder %}
+                        <div class="small text-muted mb-1">Aktueller Ordner</div>
+                        <a href="{% url 'document_list' %}{{ current_folder_toggle_url }}"
+                           class="text-decoration-none text-reset"
+                           title="Nochmals klicken: eine Ebene zurück">
+                            <div class="current-folder-display">
+                                <div class="folder-icon"></div>
+                                <div>
+                                    <div class="current-folder-name">{{ current_folder.name }}</div>
+                                    <div class="folder-subtitle">Nochmals klicken: eine Ebene zurück</div>
                                 </div>
                             </div>
                         </a>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="text-muted small">
-                Keine Unterordner vorhanden.
-            </div>
-        {% endif %}
-    </div>
-</div>
+                    {% elif selected_folder == "all" %}
+                        <div class="small text-muted">Ansicht</div>
+                        <div class="fw-semibold">Alle Dokumente</div>
+                    {% else %}
+                        <div class="small text-muted">Ansicht</div>
+                        <div class="fw-semibold">Start / Dokumente ohne Ordner</div>
+                    {% endif %}
+                </div>
 
-<div class="card">
-    <div class="card-body">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h2 class="h5 mb-0">
-                {% if current_folder %}
-                    Dokumente direkt in „{{ current_folder.name }}“
-                {% elif selected_folder == "all" %}
-                    Alle Dokumente
-                {% else %}
-                    Dokumente ohne Ordner
-                {% endif %}
-            </h2>
+                <div class="d-flex flex-wrap gap-2">
+                    {% if current_folder and not is_search_mode %}
+                        {% if parent_folder %}
+                            <a href="{% url 'document_list' %}?folder={{ parent_folder.pk }}&label={{ selected_label }}"
+                               class="btn btn-sm btn-outline-secondary">
+                                ← {{ parent_folder.name }}
+                            </a>
+                        {% else %}
+                            <a href="{% url 'document_list' %}?label={{ selected_label }}"
+                               class="btn btn-sm btn-outline-secondary">
+                                ← Start
+                            </a>
+                        {% endif %}
+                    {% elif selected_folder == "all" or is_search_mode %}
+                        <a href="{% url 'document_list' %}?label={{ selected_label }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            Start
+                        </a>
+                    {% endif %}
 
-            {% if selected_folder != "all" %}
-                <a href="{% url 'document_list' %}?folder=all&q={{ search }}&label={{ selected_label }}"
-                   class="btn btn-sm btn-outline-secondary">
-                    Alle Dokumente anzeigen
-                </a>
-            {% endif %}
+                    <a href="{% url 'document_list' %}?folder=all&label={{ selected_label }}"
+                       class="btn btn-sm {% if selected_folder == 'all' and not is_search_mode %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        Alle Dokumente
+                    </a>
+                </div>
+            </div>
         </div>
 
-        {% if items %}
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Titel</th>
-                            <th>Typ</th>
-                            <th>Herkunft</th>
-                            <th>Status</th>
-                            <th>Verfahren</th>
-                            <th>AV</th>
-                            <th>Ordner</th>
-                            <th>Labels</th>
-                            <th>Version</th>
-                            <th>Aktionen</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in items %}
-                            <tr>
-                                <td>
-                                    {% if item.description %}
-                                        <span
-                                            data-bs-toggle="tooltip"
-                                            data-bs-placement="top"
-                                            title="{{ item.description }}"
-                                        >
-                                            <strong>{{ item.title }}</strong>
-                                        </span>
-                                    {% else %}
-                                        <strong>{{ item.title }}</strong>
-                                    {% endif %}
+        {% if not is_search_mode %}
+            <div class="mb-4">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                    <div>
+                        <h2 class="h5 mb-1">
+                            {% if current_folder %}
+                                Unterordner
+                            {% else %}
+                                Ordner
+                            {% endif %}
+                        </h2>
+                        <div class="small text-muted">
+                            {% if current_folder %}
+                                Klick auf Unterordner öffnet ihn. Klick auf den aktuellen Ordner führt eine Ebene zurück.
+                            {% else %}
+                                Klick auf einen Ordner öffnet ihn.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
 
-                                    {% if item.source_text_template %}
-                                        <div class="small text-muted">
-                                            Muster: {{ item.source_text_template.title }}
-                                        </div>
-                                    {% endif %}
-                                </td>
-
-                                <td>{{ item.get_document_type_display }}</td>
-                                <td>{{ item.get_origin_display }}</td>
-                                <td>{{ item.get_document_status_display }}</td>
-                                <td>{{ item.related_processing_activity.title|default:"—" }}</td>
-                                <td>{{ item.related_processor.name|default:"—" }}</td>
-                                <td>{{ item.folder.name|default:"—" }}</td>
-
-                                <td>
-                                    {% for label in item.labels.all %}
-                                        <span class="badge bg-secondary">{{ label.name }}</span>
-                                    {% empty %}
-                                        —
-                                    {% endfor %}
-                                </td>
-
-                                <td>{{ item.version|default:"—" }}</td>
-
-                                <td class="d-flex gap-2">
-                                    {% if item.file %}
-                                        <a href="{% url 'document_download' item.pk %}"
-                                           class="btn btn-sm btn-outline-primary"
-                                           target="_blank"
-                                           rel="noopener">
-                                            Anzeigen
-                                        </a>
-                                    {% endif %}
-
-                                    <a href="{% url 'document_edit' item.pk %}"
-                                       class="btn btn-sm btn-outline-secondary">
-                                        Bearbeiten
-                                    </a>
-                                </td>
-                            </tr>
+                {% if child_folders %}
+                    <div class="folder-grid">
+                        {% for folder in child_folders %}
+                            <a href="{% url 'document_list' %}?folder={{ folder.pk }}&label={{ selected_label }}"
+                               class="folder-card">
+                                <div class="d-flex align-items-start gap-3">
+                                    <div class="folder-icon"></div>
+                                    <div class="min-w-0">
+                                        <div class="folder-title" title="{{ folder.name }}">{{ folder.name }}</div>
+                                        <div class="folder-subtitle">Ordner öffnen</div>
+                                    </div>
+                                </div>
+                            </a>
                         {% endfor %}
-                    </tbody>
-                </table>
+                    </div>
+                {% else %}
+                    <div class="text-muted small">
+                        Keine Unterordner vorhanden.
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="info-strip mb-4 small">
+                Es wird immer nur der Inhalt des geöffneten Ordners angezeigt: direkte Unterordner und direkte Dokumente.
             </div>
         {% else %}
-            <div class="text-muted">
-                Keine Dokumente vorhanden.
+            <div class="info-strip mb-4 small">
+                Die Suche durchsucht Dokumente in allen Ordnern. Die Trefferliste zeigt den jeweiligen Ordnerpfad.
             </div>
         {% endif %}
-    </div>
+
+        <div class="card documents-card">
+            <div class="card-body p-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 p-3 border-bottom">
+                    <h2 class="h5 mb-0">
+                        {% if is_search_mode %}
+                            Suchergebnisse
+                        {% elif current_folder %}
+                            Dokumente in „{{ current_folder.name }}“
+                        {% elif selected_folder == "all" %}
+                            Alle Dokumente
+                        {% else %}
+                            Dokumente ohne Ordner
+                        {% endif %}
+                    </h2>
+
+                    {% if selected_folder != "all" or is_search_mode %}
+                        <a href="{% url 'document_list' %}?folder=all&label={{ selected_label }}"
+                           class="btn btn-sm btn-outline-secondary">
+                            Alle Dokumente anzeigen
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if items %}
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0 documents-table">
+                            <thead>
+                                <tr>
+                                    <th>Titel</th>
+                                    <th>Typ</th>
+                                    <th>Status</th>
+                                    <th>Verfahren</th>
+                                    <th>AV</th>
+                                    <th>Ordner</th>
+                                    <th>Labels</th>
+                                    <th>Version</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in items %}
+                                    <tr>
+                                        <td>
+                                            {% if item.description %}
+                                                <span
+                                                    data-bs-toggle="tooltip"
+                                                    data-bs-placement="top"
+                                                    title="{{ item.description }}"
+                                                >
+                                                    <span class="document-title">{{ item.title }}</span>
+                                                </span>
+                                            {% else %}
+                                                <span class="document-title">{{ item.title }}</span>
+                                            {% endif %}
+
+                                            {% if item.source_text_template %}
+                                                <div class="document-meta">
+                                                    Muster: {{ item.source_text_template.title }}
+                                                </div>
+                                            {% endif %}
+                                            <div class="document-meta">{{ item.get_origin_display }}</div>
+                                        </td>
+
+                                        <td>{{ item.get_document_type_display }}</td>
+                                        <td>{{ item.get_document_status_display }}</td>
+                                        <td>{{ item.related_processing_activity.title|default:"—" }}</td>
+                                        <td>{{ item.related_processor.name|default:"—" }}</td>
+                                        <td>
+                                            {% if item.folder %}
+                                                {{ item.folder }}
+                                            {% else %}
+                                                —
+                                            {% endif %}
+                                        </td>
+
+                                        <td>
+                                            {% for label in item.labels.all %}
+                                                <span class="badge bg-secondary">{{ label.name }}</span>
+                                            {% empty %}
+                                                —
+                                            {% endfor %}
+                                        </td>
+
+                                        <td>{{ item.version|default:"—" }}</td>
+
+                                        <td>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                {% if item.file %}
+                                                    <a href="{% url 'document_download' item.pk %}"
+                                                       class="btn btn-sm btn-outline-primary"
+                                                       target="_blank"
+                                                       rel="noopener">
+                                                        Anzeigen
+                                                    </a>
+                                                {% endif %}
+
+                                                <a href="{% url 'document_edit' item.pk %}"
+                                                   class="btn btn-sm btn-outline-secondary">
+                                                    Bearbeiten
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="p-3 text-muted">
+                        Keine Dokumente vorhanden.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
 </div>
 
 {% endblock %}
@@ -248,6 +599,32 @@ document.addEventListener("DOMContentLoaded", function () {
     tooltipTriggerList.map(function (el) {
         return new bootstrap.Tooltip(el);
     });
+
+    const shell = document.getElementById("documents-shell");
+    const toggleButton = document.getElementById("toggle-folder-tree");
+    const storageKey = "prossessor-documents-folder-tree-collapsed";
+
+    function applyTreeState(collapsed) {
+        if (!shell || !toggleButton) {
+            return;
+        }
+
+        shell.classList.toggle("tree-collapsed", collapsed);
+        toggleButton.textContent = collapsed
+            ? "Ordnerstruktur anzeigen"
+            : "Ordnerstruktur ausblenden";
+    }
+
+    const storedValue = localStorage.getItem(storageKey);
+    applyTreeState(storedValue === "1");
+
+    if (toggleButton && shell) {
+        toggleButton.addEventListener("click", function () {
+            const collapsed = !shell.classList.contains("tree-collapsed");
+            localStorage.setItem(storageKey, collapsed ? "1" : "0");
+            applyTreeState(collapsed);
+        });
+    }
 });
 </script>
 {% endblock %}

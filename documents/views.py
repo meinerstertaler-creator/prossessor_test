@@ -177,6 +177,7 @@ def document_list(request):
     parent_folder = None
     child_folders = folders.filter(parent__isnull=True)
     selected_folder = "root"
+    is_search_mode = bool(search)
 
     if folder_id == "all":
         selected_folder = "all"
@@ -193,18 +194,77 @@ def document_list(request):
     else:
         items = base_items.filter(folder__isnull=True)
 
-    if label_id:
-        items = items.filter(labels__id=label_id)
-
     if search:
-        items = items.filter(
+        items = base_items.filter(
             Q(title__icontains=search)
             | Q(description__icontains=search)
             | Q(version__icontains=search)
+            | Q(folder__name__icontains=search)
+            | Q(labels__name__icontains=search)
+            | Q(related_processing_activity__title__icontains=search)
+            | Q(related_processor__name__icontains=search)
         )
+
+    if label_id:
+        items = items.filter(labels__id=label_id)
 
     items = items.distinct().order_by("title")
     child_folders = child_folders.order_by("name")
+
+    folder_list = list(folders.select_related("parent"))
+    children_by_parent = {}
+
+    for folder in folder_list:
+        children_by_parent.setdefault(folder.parent_id, []).append(folder)
+
+    for children in children_by_parent.values():
+        children.sort(key=lambda folder: folder.name.lower())
+
+    active_folder_ids = set()
+    cursor = current_folder
+
+    while cursor is not None:
+        active_folder_ids.add(cursor.pk)
+        cursor = cursor.parent
+
+    folder_tree_nodes = []
+
+    def add_folder_tree_nodes(parent_id=None, depth=0):
+        for folder in children_by_parent.get(parent_id, []):
+            is_active_path = folder.pk in active_folder_ids
+            is_current = current_folder is not None and folder.pk == current_folder.pk
+            is_dimmed = bool(current_folder) and not is_active_path
+
+            if is_current:
+                if folder.parent_id:
+                    href = f"?folder={folder.parent_id}"
+                else:
+                    href = "?"
+            else:
+                href = f"?folder={folder.pk}"
+
+            folder_tree_nodes.append(
+                {
+                    "folder": folder,
+                    "depth": depth,
+                    "indent": depth * 14,
+                    "is_active_path": is_active_path,
+                    "is_current": is_current,
+                    "is_dimmed": is_dimmed,
+                    "href": href,
+                }
+            )
+            add_folder_tree_nodes(folder.pk, depth + 1)
+
+    add_folder_tree_nodes()
+
+    if current_folder:
+        if current_folder.parent_id:
+            current_folder_toggle_url = f"?folder={current_folder.parent_id}"
+        else:
+            current_folder_toggle_url = "?"
+    else:
+        current_folder_toggle_url = ""
 
     return render(
         request,
@@ -212,13 +272,16 @@ def document_list(request):
         {
             "items": items,
             "folders": folders,
+            "folder_tree_nodes": folder_tree_nodes,
             "child_folders": child_folders,
             "current_folder": current_folder,
+            "current_folder_toggle_url": current_folder_toggle_url,
             "parent_folder": parent_folder,
             "labels": labels,
             "selected_folder": selected_folder,
             "selected_label": label_id,
             "search": search,
+            "is_search_mode": is_search_mode,
         },
     )
 
