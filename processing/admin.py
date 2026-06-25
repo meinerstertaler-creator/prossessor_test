@@ -9,6 +9,9 @@ from .models import (
     ProcessingActivity,
     ProcessingStandardCase,
     ProcessingTemplate,
+    RetentionDataObject,
+    RetentionRule,
+    RetentionStorageSystem,
     TenantProcessingTemplateSetting,
 )
 
@@ -312,3 +315,120 @@ class ProcessingActivityAdmin(admin.ModelAdmin):
         return format_html('<a href="{}">Rechtsbewertung öffnen</a>', url)
 
     legal_assessment_link.short_description = "Rechtsbewertung"
+
+
+# ---------------------------------------------------------------------------
+# Löschkonzept / Retention – Admin kompatibel mit Meilenstein 1A
+# ---------------------------------------------------------------------------
+# Diese Admin-Version passt zu den aktuell vorhandenen Retention-Modellen ohne
+# technical_key, rule_type und is_na_rule.
+# ---------------------------------------------------------------------------
+
+
+@admin.register(RetentionDataObject)
+class RetentionDataObjectAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "is_active",
+        "sort_order",
+        "updated_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = ("name", "description")
+    list_editable = ("is_active", "sort_order")
+    ordering = ("sort_order", "name")
+
+
+@admin.register(RetentionStorageSystem)
+class RetentionStorageSystemAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "default_deletion_location",
+        "default_information_owner",
+        "is_active",
+        "sort_order",
+        "updated_at",
+    )
+    list_filter = ("is_active",)
+    search_fields = (
+        "name",
+        "description",
+        "default_deletion_location",
+        "default_information_owner",
+    )
+    list_editable = ("is_active", "sort_order")
+    ordering = ("sort_order", "name")
+
+
+@admin.register(RetentionRule)
+class RetentionRuleAdmin(admin.ModelAdmin):
+    list_display = (
+        "data_object",
+        "storage_system",
+        "retention_display",
+        "trigger",
+        "legal_basis",
+        "information_owner_role",
+        "requires_review",
+        "is_active",
+    )
+    fieldsets = (
+        (
+            "Zuordnung",
+            {
+                "fields": (
+                    "data_object",
+                    "storage_system",
+                    "is_active",
+                    "sort_order",
+                )
+            },
+        ),
+        (
+            "Löschregel",
+            {
+                "fields": (
+                    "retention_period_value",
+                    "retention_period_unit",
+                    "trigger",
+                    "legal_basis",
+                    "requires_review",
+                )
+            },
+        ),
+        (
+            "Verantwortung und Umsetzung",
+            {
+                "fields": (
+                    "information_owner_role",
+                    "deletion_location",
+                    "note",
+                ),
+                "description": (
+                    "Das ausgewählte Speicherort/System ist der eigentliche Speicher- bzw. Löschort. "
+                    "Das Feld Löschort/Umsetzungshinweis beschreibt nur die praktische Routine, "
+                    "z. B. Postfachregel, Archivroutine oder Backup-Rotation."
+                ),
+            },
+        ),
+    )
+    list_filter = (
+        "is_active",
+        "requires_review",
+        "retention_period_unit",
+        "data_object",
+        "storage_system",
+    )
+    search_fields = (
+        "data_object__name",
+        "storage_system__name",
+        "trigger",
+        "legal_basis",
+        "deletion_location",
+        "information_owner_role",
+        "note",
+    )
+    autocomplete_fields = ("data_object", "storage_system")
+    list_editable = ("is_active",)
+    ordering = ("sort_order", "data_object__name", "storage_system__name")
+
