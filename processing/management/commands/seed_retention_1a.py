@@ -12,58 +12,22 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         data_objects = [
-            {
-                "name": "E-Mail Handelsbrief",
-                "description": "Ein- oder ausgehende E-Mail mit Handelsbrief-/Geschäftsbriefcharakter.",
-                "sort_order": 10,
-            },
-            {
-                "name": "Rechnung",
-                "description": "Rechnung oder rechnungsrelevanter Buchungsbeleg.",
-                "sort_order": 20,
-            },
-            {
-                "name": "Softwareeintrag",
-                "description": "Strukturierter Eintrag in einer Fachsoftware, z. B. Mandats-/Kundendatensatz.",
-                "sort_order": 30,
-            },
+            {"name": "E-Mail Handelsbrief", "description": "Ein- oder ausgehende E-Mail mit Handelsbrief-/Geschäftsbriefcharakter.", "sort_order": 10},
+            {"name": "Rechnung", "description": "Rechnung oder rechnungsrelevanter Buchungsbeleg.", "sort_order": 20},
+            {"name": "Softwareeintrag", "description": "Strukturierter Eintrag in einer Fachsoftware, z. B. Mandats-/Kundendatensatz.", "sort_order": 30},
         ]
 
         systems = [
-            {
-                "name": "Outlook / Exchange",
-                "description": "E-Mail-System / Postfach / Exchange-Archiv.",
-                "default_deletion_location": "Postfach-/Archivregel",
-                "default_information_owner": "zuständige Fachabteilung / Postfachinhaber",
-                "sort_order": 10,
-            },
-            {
-                "name": "DATEV",
-                "description": "Buchhaltungs-/Rechnungswesen-System.",
-                "default_deletion_location": "Löschung/Archivierung nach Buchhaltungsroutine",
-                "default_information_owner": "Buchhaltung / Steuerverantwortliche",
-                "sort_order": 20,
-            },
-            {
-                "name": "RA-MICRO",
-                "description": "Kanzlei-/Mandatssoftware.",
-                "default_deletion_location": "Löschung/Archivierung nach Kanzleisoftware-Routine",
-                "default_information_owner": "Mandatsverantwortlicher / Kanzleileitung",
-                "sort_order": 30,
-            },
+            {"name": "Outlook / Exchange", "description": "E-Mail-System / Postfach / Exchange-Archiv.", "default_deletion_location": "Postfach-/Archivregel", "default_information_owner": "zuständige Fachabteilung / Postfachinhaber", "sort_order": 10},
+            {"name": "DATEV", "description": "Buchhaltungs-/Rechnungswesen-System.", "default_deletion_location": "Löschung/Archivierung nach Buchhaltungsroutine", "default_information_owner": "Buchhaltung / Steuerverantwortliche", "sort_order": 20},
+            {"name": "RA-MICRO", "description": "Kanzlei-/Mandatssoftware.", "default_deletion_location": "Löschung/Archivierung nach Kanzleisoftware-Routine", "default_information_owner": "Mandatsverantwortlicher / Kanzleileitung", "sort_order": 30},
         ]
 
         for item in data_objects:
-            RetentionDataObject.objects.update_or_create(
-                name=item["name"],
-                defaults=item,
-            )
+            RetentionDataObject.objects.update_or_create(name=item["name"], defaults=item)
 
         for item in systems:
-            RetentionStorageSystem.objects.update_or_create(
-                name=item["name"],
-                defaults=item,
-            )
+            RetentionStorageSystem.objects.update_or_create(name=item["name"], defaults=item)
 
         email = RetentionDataObject.objects.get(name="E-Mail Handelsbrief")
         invoice = RetentionDataObject.objects.get(name="Rechnung")
@@ -122,6 +86,4 @@ class Command(BaseCommand):
                 defaults=item,
             )
 
-        self.stdout.write(
-            self.style.SUCCESS("Retention Pilot 1A Seed-Daten wurden angelegt/aktualisiert.")
-        )
+        self.stdout.write(self.style.SUCCESS("Retention Stabilization Seed-Daten wurden angelegt/aktualisiert."))
