@@ -10,7 +10,6 @@ from .models import (
     ProcessingStandardCase,
     ProcessingTemplate,
     RetentionDataObject,
-    RetentionRule,
     RetentionStorageSystem,
     TenantProcessingTemplateSetting,
 )
@@ -329,14 +328,83 @@ class ProcessingActivityAdmin(admin.ModelAdmin):
 class RetentionDataObjectAdmin(admin.ModelAdmin):
     list_display = (
         "name",
+        "retention_display",
+        "retention_trigger",
+        "review_status",
         "is_active",
         "sort_order",
         "updated_at",
     )
-    list_filter = ("is_active",)
-    search_fields = ("name", "description")
+    list_filter = (
+        "retention_period_unit",
+        "review_status",
+        "is_active",
+    )
+    search_fields = (
+        "name",
+        "description",
+        "typical_personal_data_categories",
+        "retention_trigger",
+        "legal_basis",
+        "review_note",
+        "typical_storage_locations",
+    )
     list_editable = ("is_active", "sort_order")
     ordering = ("sort_order", "name")
+
+    fieldsets = (
+        (
+            "Aufbewahrungstatbestand",
+            {
+                "fields": (
+                    "name",
+                    "description",
+                    "is_active",
+                    "sort_order",
+                )
+            },
+        ),
+        (
+            "Typische personenbezogene Daten",
+            {
+                "fields": (
+                    "typical_personal_data_categories",
+                )
+            },
+        ),
+        (
+            "Frist und Rechtsgrundlage",
+            {
+                "fields": (
+                    "retention_period_value",
+                    "retention_period_unit",
+                    "retention_trigger",
+                    "legal_basis",
+                )
+            },
+        ),
+        (
+            "Prüfung",
+            {
+                "fields": (
+                    "review_status",
+                    "review_note",
+                )
+            },
+        ),
+        (
+            "Orientierung zu Löschorten",
+            {
+                "fields": (
+                    "typical_storage_locations",
+                ),
+                "description": (
+                    "Nur Orientierung aus den Stammdaten. "
+                    "Die konkreten Löschorte/Systeme werden später im Verfahren ausgewählt."
+                ),
+            },
+        ),
+    )
 
 
 @admin.register(RetentionStorageSystem)
@@ -358,77 +426,3 @@ class RetentionStorageSystemAdmin(admin.ModelAdmin):
     )
     list_editable = ("is_active", "sort_order")
     ordering = ("sort_order", "name")
-
-
-@admin.register(RetentionRule)
-class RetentionRuleAdmin(admin.ModelAdmin):
-    list_display = (
-        "data_object",
-        "storage_system",
-        "retention_display",
-        "trigger",
-        "legal_basis",
-        "information_owner_role",
-        "requires_review",
-        "is_active",
-    )
-    fieldsets = (
-        (
-            "Zuordnung",
-            {
-                "fields": (
-                    "data_object",
-                    "storage_system",
-                    "is_active",
-                    "sort_order",
-                )
-            },
-        ),
-        (
-            "Löschregel",
-            {
-                "fields": (
-                    "retention_period_value",
-                    "retention_period_unit",
-                    "trigger",
-                    "legal_basis",
-                    "requires_review",
-                )
-            },
-        ),
-        (
-            "Verantwortung und Umsetzung",
-            {
-                "fields": (
-                    "information_owner_role",
-                    "deletion_location",
-                    "note",
-                ),
-                "description": (
-                    "Das ausgewählte Speicherort/System ist der eigentliche Speicher- bzw. Löschort. "
-                    "Das Feld Löschort/Umsetzungshinweis beschreibt nur die praktische Routine, "
-                    "z. B. Postfachregel, Archivroutine oder Backup-Rotation."
-                ),
-            },
-        ),
-    )
-    list_filter = (
-        "is_active",
-        "requires_review",
-        "retention_period_unit",
-        "data_object",
-        "storage_system",
-    )
-    search_fields = (
-        "data_object__name",
-        "storage_system__name",
-        "trigger",
-        "legal_basis",
-        "deletion_location",
-        "information_owner_role",
-        "note",
-    )
-    autocomplete_fields = ("data_object", "storage_system")
-    list_editable = ("is_active",)
-    ordering = ("sort_order", "data_object__name", "storage_system__name")
-

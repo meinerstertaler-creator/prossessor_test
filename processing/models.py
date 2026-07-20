@@ -351,16 +351,116 @@ class TenantProcessingTemplateSetting(models.Model):
 
 class RetentionDataObject(models.Model):
     """
-    Strukturierter Katalog der Datenobjekte/Löschobjekte.
+    Aufbewahrungstatbestand für das automatische Löschkonzept.
 
-    Pilot-Beispiele:
-    - E-Mail Handelsbrief
+    Fachliche Idee:
+    Nicht einzelne technische Datenarten wie "Namensdaten" bestimmen die Frist,
+    sondern der rechtliche/fachliche Aufbewahrungstatbestand, z. B.:
+
     - Rechnung
-    - Softwareeintrag
+    - Handelsbrief
+    - Zivilvertrag
+    - Lohnabrechnung
+    - Zeiterfassung MiLoG
+    - Patientenakte
+    - Mandatsakte
+    - Bewerbungsunterlagen
+
+    Die typischen personenbezogenen Daten dieses Tatbestands werden später
+    in die Datenkategorien des Verfahrens übernommen und können dort durch
+    den Datenschutzbeauftragten ergänzt werden.
+
+    Wichtig:
+    Löschorte/Systeme enthalten keine Fristenlogik. Sie beschreiben nur,
+    wo die jeweiligen Unterlagen/Daten später gelöscht oder geprüft werden müssen.
     """
 
-    name = models.CharField(max_length=255, unique=True)
-    description = models.TextField(blank=True)
+    class PeriodUnit(models.TextChoices):
+        IMMEDIATE = "immediate", "unverzüglich"
+        DAYS = "days", "Tage"
+        WEEKS = "weeks", "Wochen"
+        MONTHS = "months", "Monate"
+        YEARS = "years", "Jahre"
+        CHECK = "check", "prüfen"
+
+    class ReviewStatus(models.TextChoices):
+        AUTOMATIC = "automatic", "automatisch anwendbar"
+        CHECK = "check", "fachlich prüfen"
+        LEGAL_REVIEW = "legal_review", "juristisch / Audit prüfen"
+
+    name = models.CharField(
+        "Aufbewahrungstatbestand",
+        max_length=255,
+        unique=True,
+    )
+
+    description = models.TextField(
+        "Beschreibung",
+        blank=True,
+        help_text="Fachliche Beschreibung des Aufbewahrungstatbestands.",
+    )
+
+    typical_personal_data_categories = models.TextField(
+        "Typische personenbezogene Daten",
+        blank=True,
+        help_text=(
+            "Typische pbD / Datenkategorien, z. B. Namensdaten, Kontaktdaten, "
+            "Rechnungsdaten, Beschäftigtendaten. Diese Angaben können später "
+            "in das Verfahren übernommen und dort ergänzt werden."
+        ),
+    )
+
+    retention_period_value = models.PositiveIntegerField(
+        "Standardfrist",
+        null=True,
+        blank=True,
+        help_text="Zahl der Frist, z. B. 3, 6 oder 10. Leer bei 'prüfen' oder 'unverzüglich'.",
+    )
+
+    retention_period_unit = models.CharField(
+        "Fristeinheit",
+        max_length=30,
+        choices=PeriodUnit.choices,
+        default=PeriodUnit.CHECK,
+    )
+
+    retention_trigger = models.CharField(
+        "Fristbeginn / Auslöser",
+        max_length=255,
+        blank=True,
+        help_text="Startzeitpunkt der Frist, z. B. Jahresende, Vertragsende, Ausscheiden, Behandlungsende.",
+    )
+
+    legal_basis = models.CharField(
+        "Rechtsgrundlage / Quelle",
+        max_length=255,
+        blank=True,
+        help_text="Rechtsgrundlage oder interner Quellenhinweis, z. B. HGB, AO, BGB, MiLoG, BRAO.",
+    )
+
+    review_status = models.CharField(
+        "Prüfstatus",
+        max_length=30,
+        choices=ReviewStatus.choices,
+        default=ReviewStatus.CHECK,
+        help_text="Gibt an, ob der Tatbestand automatisch nutzbar ist oder fachlich/juristisch geprüft werden muss.",
+    )
+
+    review_note = models.TextField(
+        "Prüfhinweis",
+        blank=True,
+        help_text="Hinweis für DSB, Audit, Revision oder WP, z. B. Vertragsende prüfen, Handelsbriefe abgrenzen.",
+    )
+
+    typical_storage_locations = models.TextField(
+        "Typische Löschorte",
+        blank=True,
+        help_text=(
+            "Optionale Orientierung aus der Stammdaten-/Excel-Liste, z. B. E-Mail-System, "
+            "DMS, ERP, Papierakte. Die konkreten Löschorte werden später im Verfahren ausgewählt."
+        ),
+    )
+
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveIntegerField(default=100)
 
@@ -369,11 +469,21 @@ class RetentionDataObject(models.Model):
 
     class Meta:
         ordering = ["sort_order", "name"]
-        verbose_name = "Löschobjekt"
-        verbose_name_plural = "Löschobjekte"
+        verbose_name = "Aufbewahrungstatbestand"
+        verbose_name_plural = "Aufbewahrungstatbestände"
 
     def __str__(self):
         return self.name
+
+    @property
+    def retention_display(self):
+        if self.retention_period_unit == self.PeriodUnit.IMMEDIATE:
+            return "unverzüglich"
+        if self.retention_period_unit == self.PeriodUnit.CHECK:
+            return "prüfen"
+        if self.retention_period_value is None:
+            return self.get_retention_period_unit_display()
+        return f"{self.retention_period_value} {self.get_retention_period_unit_display()}"
 
 
 class RetentionStorageSystem(models.Model):
@@ -410,202 +520,106 @@ class RetentionStorageSystem(models.Model):
 
     class Meta:
         ordering = ["sort_order", "name"]
-        verbose_name = "Speicherort / System"
-        verbose_name_plural = "Speicherorte / Systeme"
+        verbose_name = "Löschort / System"
+        verbose_name_plural = "Löschorte / Systeme"
 
     def __str__(self):
         return self.name
 
 
-class RetentionRule(models.Model):
-    """
-    Standard-Löschregel.
-
-    Logik:
-        Löschobjekt + System/Speicherort -> Frist, Trigger, Rechtsgrund, Löschort
-
-    Pilot-Beispiel:
-        E-Mail Handelsbrief + Outlook / Exchange
-        -> 6 Jahre, HGB, Postfach/Archiv
-    """
-
-    class PeriodUnit(models.TextChoices):
-        IMMEDIATE = "immediate", "unverzüglich"
-        DAYS = "days", "Tage"
-        WEEKS = "weeks", "Wochen"
-        MONTHS = "months", "Monate"
-        YEARS = "years", "Jahre"
-        CHECK = "check", "prüfen"
-
-    data_object = models.ForeignKey(
-        RetentionDataObject,
-        on_delete=models.CASCADE,
-        related_name="retention_rules",
-    )
-
-    storage_system = models.ForeignKey(
-        RetentionStorageSystem,
-        on_delete=models.CASCADE,
-        related_name="retention_rules",
-    )
-
-    retention_period_value = models.PositiveIntegerField(
-        null=True,
-        blank=True,
-        help_text="Zahl der Frist, z. B. 6 oder 10. Leer bei 'unverzüglich' oder 'prüfen'.",
-    )
-
-    retention_period_unit = models.CharField(
-        max_length=30,
-        choices=PeriodUnit.choices,
-        default=PeriodUnit.CHECK,
-    )
-
-    trigger = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Startzeitpunkt der Frist, z. B. Jahresende, Vertragsende, Zweckfortfall.",
-    )
-
-    legal_basis = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Rechtsgrund / Hinweis, z. B. HGB, AO, BRAO, DSGVO.",
-    )
-
-    deletion_location = models.CharField(
-        "Umsetzungshinweis / Löschroutine",
-        max_length=255,
-        blank=True,
-        help_text="Optionaler Hinweis zur praktischen Umsetzung, z. B. Postfachregel, Archivroutine, Backup-Rotation. Der eigentliche Speicherort ist das ausgewählte System.",
-    )
-
-    information_owner_role = models.CharField(
-        max_length=255,
-        blank=True,
-        help_text="Typischer Informationsinhaber / zuständige Rolle.",
-    )
-
-    requires_review = models.BooleanField(
-        default=False,
-        help_text="Markiert Regeln, die fachlich geprüft werden müssen.",
-    )
-
-    is_active = models.BooleanField(default=True)
-    note = models.TextField(blank=True)
-    sort_order = models.PositiveIntegerField(default=100)
-
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ("data_object", "storage_system")
-        ordering = ["sort_order", "data_object__name", "storage_system__name"]
-        verbose_name = "Löschregel"
-        verbose_name_plural = "Löschregeln"
-
-    def __str__(self):
-        return f"{self.data_object} / {self.storage_system}"
-
-    @property
-    def retention_display(self):
-        if self.retention_period_unit == self.PeriodUnit.IMMEDIATE:
-            return "unverzüglich"
-        if self.retention_period_unit == self.PeriodUnit.CHECK:
-            return "prüfen"
-        if self.retention_period_value is None:
-            return self.get_retention_period_unit_display()
-        return f"{self.retention_period_value} {self.get_retention_period_unit_display()}"
-
 
 class ProcessingRetentionAssignment(models.Model):
     """
-    Konkrete Zuordnung im Verfahren.
+    Zuordnung eines Aufbewahrungstatbestands zu einem Verfahren.
 
-    Verfahren -> Löschobjekt -> System/Speicherort -> automatisch gefundene Löschregel
-
-    Diese Tabelle ist später Grundlage für:
-    - Löschübersicht
-    - Report
-    - Statusanzeige im Verfahren
+    Der Aufbewahrungstatbestand bestimmt Frist, Fristbeginn,
+    Rechtsgrundlage, typische personenbezogene Daten und Prüfhinweise.
+    Löschorte/Systeme werden davon getrennt dem Verfahren zugeordnet.
     """
-
-    class Status(models.TextChoices):
-        COMPLETE = "complete", "Vollständig"
-        CHECK = "check", "Prüfen"
-        INCOMPLETE = "incomplete", "Unvollständig"
-        NOT_APPLICABLE = "not_applicable", "Nicht einschlägig"
 
     processing_activity = models.ForeignKey(
         ProcessingActivity,
         on_delete=models.CASCADE,
         related_name="retention_assignments",
+        verbose_name="Verfahren",
     )
 
     data_object = models.ForeignKey(
         RetentionDataObject,
         on_delete=models.PROTECT,
         related_name="processing_assignments",
-    )
-
-    storage_system = models.ForeignKey(
-        RetentionStorageSystem,
-        on_delete=models.PROTECT,
-        related_name="processing_assignments",
-    )
-
-    applied_rule = models.ForeignKey(
-        RetentionRule,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="processing_assignments",
-        help_text="Automatisch passende oder manuell gewählte Löschregel.",
-    )
-
-    status = models.CharField(
-        max_length=30,
-        choices=Status.choices,
-        default=Status.INCOMPLETE,
+        verbose_name="Aufbewahrungstatbestand",
     )
 
     custom_note = models.TextField(
+        "Hinweis zum Verfahren",
         blank=True,
-        help_text="Hinweis oder Abweichung im konkreten Verfahren.",
+        help_text="Optionale Konkretisierung oder Abweichung im konkreten Verfahren.",
     )
 
-    na_reason = models.TextField(
-        blank=True,
-        help_text="Begründung, wenn kein Löschkonzept erforderlich ist.",
-    )
-
+    is_active = models.BooleanField("aktiv", default=True)
     sort_order = models.PositiveIntegerField(default=100)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("processing_activity", "data_object", "storage_system")
+        unique_together = ("processing_activity", "data_object")
         ordering = ["processing_activity", "sort_order", "data_object__name"]
-        verbose_name = "Löschzuordnung im Verfahren"
-        verbose_name_plural = "Löschzuordnungen in Verfahren"
+        verbose_name = "Aufbewahrungstatbestand im Verfahren"
+        verbose_name_plural = "Aufbewahrungstatbestände in Verfahren"
 
     def __str__(self):
-        return f"{self.processing_activity} – {self.data_object} / {self.storage_system}"
+        return f"{self.processing_activity} – {self.data_object}"
 
-    def save(self, *args, **kwargs):
-        if not self.applied_rule_id and self.data_object_id and self.storage_system_id:
-            self.applied_rule = RetentionRule.objects.filter(
-                data_object=self.data_object,
-                storage_system=self.storage_system,
-                is_active=True,
-            ).first()
 
-        if self.status != self.Status.NOT_APPLICABLE:
-            if self.applied_rule_id:
-                self.status = self.Status.CHECK if self.applied_rule.requires_review else self.Status.COMPLETE
-            else:
-                self.status = self.Status.INCOMPLETE
+class ProcessingStorageAssignment(models.Model):
+    """
+    Zuordnung eines Löschorts / Systems zu einem Verfahren.
 
-        super().save(*args, **kwargs)
+    Der Löschort beeinflusst nicht die Aufbewahrungsfrist.
+    Er dokumentiert nur, wo im Verfahren gespeichert und später
+    gelöscht oder auf Löschung geprüft werden muss.
+    """
 
+    processing_activity = models.ForeignKey(
+        ProcessingActivity,
+        on_delete=models.CASCADE,
+        related_name="storage_assignments",
+        verbose_name="Verfahren",
+    )
+
+    storage_system = models.ForeignKey(
+        RetentionStorageSystem,
+        on_delete=models.PROTECT,
+        related_name="processing_assignments",
+        verbose_name="Löschort / System",
+    )
+
+    custom_note = models.CharField(
+        "Ergänzende Bezeichnung / Hinweis",
+        max_length=255,
+        blank=True,
+        help_text=(
+            "Optionaler Freitext, z. B. konkrete Produktbezeichnung, "
+            "Servername, Archivraum oder sonstige Konkretisierung."
+        ),
+    )
+
+    is_active = models.BooleanField("aktiv", default=True)
+    sort_order = models.PositiveIntegerField(default=100)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ("processing_activity", "storage_system")
+        ordering = ["processing_activity", "sort_order", "storage_system__name"]
+        verbose_name = "Löschort / System im Verfahren"
+        verbose_name_plural = "Löschorte / Systeme in Verfahren"
+
+    def __str__(self):
+        label = f"{self.processing_activity} – {self.storage_system}"
+        if self.custom_note:
+            return f"{label} ({self.custom_note})"
+        return label

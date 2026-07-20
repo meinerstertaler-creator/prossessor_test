@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}{{ page_title }}{% endblock %}
+{% block title %}{{ page_title }}
+
+{% endblock %}
 
 {% block content %}
 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
@@ -294,24 +296,139 @@
                 </div>
             </div>
 
-            <h2 class="h5">Löschung / Sicherheit / Sonstiges</h2>
+            <h2 class="h5">Aufbewahrung und Löschung</h2>
+
             <div class="row g-3 mb-4">
-                <div class="col-12 col-lg-4">
-                    <label class="form-label" for="{{ form.retention_period.id_for_label }}">Löschfrist</label>
-                    {{ form.retention_period }}
-                    <div class="text-danger small">{{ form.retention_period.errors }}</div>
+                <div class="col-12 col-xl-6">
+                    <label class="form-label">Aufbewahrungstatbestände</label>
+                    <div class="border rounded p-3 bg-light">
+                        <div id="retentionDataObjectsSummary" class="mb-2 text-muted">Keine Auswahl</div>
+                        <button type="button"
+                                class="btn btn-outline-primary js-dialog-open"
+                                data-dialog="retentionDialog">
+                            Aufbewahrungstatbestände auswählen
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        Nur die ausgewählten Tatbestände werden dem Verfahren zugeordnet.
+                    </div>
+                    <div class="text-danger small">{{ form.retention_data_objects.errors }}</div>
                 </div>
 
+                <div class="col-12 col-xl-6">
+                    <label class="form-label">Löschorte / Systeme</label>
+                    <div class="border rounded p-3 bg-light">
+                        <div id="storageSystemsSummary" class="mb-2 text-muted">Keine Auswahl</div>
+                        <button type="button"
+                                class="btn btn-outline-primary js-dialog-open"
+                                data-dialog="storageDialog">
+                            Löschorte / Systeme auswählen
+                        </button>
+                    </div>
+                    <div class="form-text">
+                        Nur die ausgewählten Löschorte oder Systeme werden dem Verfahren zugeordnet.
+                    </div>
+                    <div class="text-danger small">{{ form.storage_systems.errors }}</div>
+                </div>
+            </div>
+
+            <h2 class="h5">Technische und organisatorische Maßnahmen</h2>
+            <div class="row g-3 mb-4">
                 <div class="col-12">
-                    <label class="form-label" for="{{ form.tom_summary.id_for_label }}">TOM-Kurzbeschreibung</label>
+                    <label class="form-label" for="{{ form.tom_summary.id_for_label }}">
+                        TOM-Kurzbeschreibung
+                    </label>
                     {{ form.tom_summary }}
                     <div class="text-danger small">{{ form.tom_summary.errors }}</div>
                 </div>
+            </div>
 
+            <h2 class="h5">Bemerkungen</h2>
+            <div class="row g-3 mb-4">
                 <div class="col-12">
-                    <label class="form-label" for="{{ form.notes.id_for_label }}">Bemerkungen</label>
+                    <label class="form-label" for="{{ form.notes.id_for_label }}">
+                        Bemerkungen
+                    </label>
                     {{ form.notes }}
                     <div class="text-danger small">{{ form.notes.errors }}</div>
+                </div>
+            </div>
+
+            <div id="retentionDialog" class="custom-dialog" hidden aria-hidden="true">
+                <div class="custom-dialog-backdrop js-dialog-cancel" data-dialog="retentionDialog"></div>
+                <div class="custom-dialog-panel" role="dialog" aria-modal="true">
+                    <div class="custom-dialog-header">
+                        <h2 class="h5 mb-0">Aufbewahrungstatbestände auswählen</h2>
+                        <button type="button"
+                                class="btn-close js-dialog-cancel"
+                                data-dialog="retentionDialog"
+                                aria-label="Schließen"></button>
+                    </div>
+                    <div class="custom-dialog-body">
+                        <input type="search"
+                               class="form-control mb-3 js-dialog-search"
+                               data-list="retentionChoices"
+                               placeholder="Tatbestand suchen …">
+                        <div id="retentionChoices"
+                             class="choice-grid"
+                             data-summary="retentionDataObjectsSummary">
+                            {{ form.retention_data_objects }}
+                        </div>
+                    </div>
+                    <div class="custom-dialog-footer">
+                        <span class="me-auto small text-muted js-count"
+                              data-list="retentionChoices">0 ausgewählt</span>
+                        <button type="button"
+                                class="btn btn-outline-secondary js-dialog-cancel"
+                                data-dialog="retentionDialog">
+                            Abbrechen
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary js-dialog-apply"
+                                data-dialog="retentionDialog"
+                                data-list="retentionChoices">
+                            Auswahl übernehmen
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="storageDialog" class="custom-dialog" hidden aria-hidden="true">
+                <div class="custom-dialog-backdrop js-dialog-cancel" data-dialog="storageDialog"></div>
+                <div class="custom-dialog-panel" role="dialog" aria-modal="true">
+                    <div class="custom-dialog-header">
+                        <h2 class="h5 mb-0">Löschorte / Systeme auswählen</h2>
+                        <button type="button"
+                                class="btn-close js-dialog-cancel"
+                                data-dialog="storageDialog"
+                                aria-label="Schließen"></button>
+                    </div>
+                    <div class="custom-dialog-body">
+                        <input type="search"
+                               class="form-control mb-3 js-dialog-search"
+                               data-list="storageChoices"
+                               placeholder="Löschort oder System suchen …">
+                        <div id="storageChoices"
+                             class="choice-grid"
+                             data-summary="storageSystemsSummary">
+                            {{ form.storage_systems }}
+                        </div>
+                    </div>
+                    <div class="custom-dialog-footer">
+                        <span class="me-auto small text-muted js-count"
+                              data-list="storageChoices">0 ausgewählt</span>
+                        <button type="button"
+                                class="btn btn-outline-secondary js-dialog-cancel"
+                                data-dialog="storageDialog">
+                            Abbrechen
+                        </button>
+                        <button type="button"
+                                class="btn btn-primary js-dialog-apply"
+                                data-dialog="storageDialog"
+                                data-list="storageChoices">
+                            Auswahl übernehmen
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -322,4 +439,301 @@
         </form>
     </div>
 </div>
+<style>
+body.dialog-open { overflow: hidden; }
+
+.custom-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+}
+
+.custom-dialog[hidden] {
+    display: none !important;
+}
+
+.custom-dialog-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, .55);
+}
+
+.custom-dialog-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(1100px, calc(100vw - 2rem));
+    height: min(780px, calc(100vh - 2rem));
+    margin: 1rem auto;
+    background: #fff;
+    border-radius: .75rem;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, .3);
+    overflow: hidden;
+}
+
+.custom-dialog-header,
+.custom-dialog-footer {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    padding: 1rem 1.25rem;
+    background: #fff;
+}
+
+.custom-dialog-header {
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(0, 0, 0, .1);
+}
+
+.custom-dialog-footer {
+    justify-content: flex-end;
+    border-top: 1px solid rgba(0, 0, 0, .1);
+}
+
+.custom-dialog-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+    padding: 1rem 1.25rem;
+}
+
+.choice-grid {
+    height: calc(100% - 3.5rem);
+    min-height: 18rem;
+    overflow-y: auto;
+    padding-right: .5rem;
+}
+
+.choice-grid ul {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .65rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+}
+
+.choice-grid li {
+    display: block !important;
+    min-width: 0;
+    padding: .7rem .8rem !important;
+    border: 1px solid rgba(0, 0, 0, .12);
+    border-radius: .55rem;
+    background: #fff;
+}
+
+.choice-grid label {
+    display: flex !important;
+    align-items: flex-start;
+    gap: .65rem;
+    width: 100%;
+    margin: 0 !important;
+    cursor: pointer;
+}
+
+.choice-grid input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin-top: .2rem;
+}
+
+.choice-grid li.is-selected {
+    border-color: var(--bs-primary, #0d6efd) !important;
+    background: rgba(13, 110, 253, .09) !important;
+}
+
+.choice-hidden {
+    display: none !important;
+}
+
+@media (max-width: 767.98px) {
+    .custom-dialog-panel {
+        width: calc(100vw - 1rem);
+        height: calc(100vh - 1rem);
+        margin: .5rem auto;
+    }
+
+    .choice-grid ul {
+        grid-template-columns: 1fr !important;
+    }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const snapshots = new Map();
+
+    function items(list) {
+        return Array.from(list.querySelectorAll("li"));
+    }
+
+    function checks(list) {
+        return Array.from(list.querySelectorAll('input[type="checkbox"]'));
+    }
+
+    function labelText(list, checkbox) {
+        const label = checkbox.id
+            ? list.querySelector('label[for="' + checkbox.id + '"]')
+            : null;
+
+        if (label) {
+            return label.textContent.trim();
+        }
+
+        const parent = checkbox.closest("label");
+        return parent ? parent.textContent.trim() : "";
+    }
+
+    function refresh(list) {
+        items(list).forEach(function (item) {
+            const checkbox = item.querySelector('input[type="checkbox"]');
+            item.classList.toggle("is-selected", Boolean(checkbox && checkbox.checked));
+        });
+
+        const count = checks(list).filter(function (checkbox) {
+            return checkbox.checked;
+        }).length;
+
+        document.querySelectorAll('.js-count[data-list="' + list.id + '"]')
+            .forEach(function (element) {
+                element.textContent = count + " ausgewählt";
+            });
+    }
+
+    function updateSummary(list) {
+        const summary = document.getElementById(list.dataset.summary);
+        if (!summary) {
+            return;
+        }
+
+        const labels = checks(list)
+            .filter(function (checkbox) {
+                return checkbox.checked;
+            })
+            .map(function (checkbox) {
+                return labelText(list, checkbox);
+            })
+            .filter(Boolean);
+
+        if (labels.length === 0) {
+            summary.textContent = "Keine Auswahl";
+            summary.classList.add("text-muted");
+        } else if (labels.length <= 4) {
+            summary.textContent = labels.join(", ");
+            summary.classList.remove("text-muted");
+        } else {
+            summary.textContent =
+                labels.slice(0, 4).join(", ") +
+                " +" +
+                (labels.length - 4) +
+                " weitere";
+            summary.classList.remove("text-muted");
+        }
+    }
+
+    function openDialog(id) {
+        const dialog = document.getElementById(id);
+        if (!dialog) {
+            return;
+        }
+
+        dialog.querySelectorAll(".choice-grid").forEach(function (list) {
+            snapshots.set(
+                list.id,
+                checks(list).map(function (checkbox) {
+                    return checkbox.checked;
+                })
+            );
+            refresh(list);
+        });
+
+        dialog.hidden = false;
+        dialog.setAttribute("aria-hidden", "false");
+        document.body.classList.add("dialog-open");
+    }
+
+    function closeDialog(id) {
+        const dialog = document.getElementById(id);
+        if (!dialog) {
+            return;
+        }
+
+        dialog.hidden = true;
+        dialog.setAttribute("aria-hidden", "true");
+        document.body.classList.remove("dialog-open");
+    }
+
+    function restore(dialog) {
+        dialog.querySelectorAll(".choice-grid").forEach(function (list) {
+            const snapshot = snapshots.get(list.id);
+            if (!snapshot) {
+                return;
+            }
+
+            checks(list).forEach(function (checkbox, index) {
+                checkbox.checked = Boolean(snapshot[index]);
+            });
+
+            refresh(list);
+        });
+    }
+
+    document.querySelectorAll(".choice-grid").forEach(function (list) {
+        checks(list).forEach(function (checkbox) {
+            checkbox.addEventListener("change", function () {
+                refresh(list);
+            });
+        });
+
+        refresh(list);
+        updateSummary(list);
+    });
+
+    document.querySelectorAll(".js-dialog-open").forEach(function (button) {
+        button.addEventListener("click", function () {
+            openDialog(button.dataset.dialog);
+        });
+    });
+
+    document.querySelectorAll(".js-dialog-cancel").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const dialog = document.getElementById(button.dataset.dialog);
+            if (dialog) {
+                restore(dialog);
+            }
+            closeDialog(button.dataset.dialog);
+        });
+    });
+
+    document.querySelectorAll(".js-dialog-apply").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const list = document.getElementById(button.dataset.list);
+            if (list) {
+                refresh(list);
+                updateSummary(list);
+                snapshots.delete(list.id);
+            }
+            closeDialog(button.dataset.dialog);
+        });
+    });
+
+    document.querySelectorAll(".js-dialog-search").forEach(function (search) {
+        search.addEventListener("input", function () {
+            const list = document.getElementById(search.dataset.list);
+            if (!list) {
+                return;
+            }
+
+            const needle = search.value.trim().toLowerCase();
+
+            items(list).forEach(function (item) {
+                const textValue = item.textContent.trim().toLowerCase();
+                item.classList.toggle(
+                    "choice-hidden",
+                    needle !== "" && !textValue.includes(needle)
+                );
+            });
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -389,6 +389,8 @@ def processing_create(request):
                 item.tenant = item.department.tenant
 
             item.save()
+            form.save_retention_selections(item)
+
             action_result = generate_processing_actions(item)
             close_resolved_processing_actions(item)
 
@@ -545,6 +547,8 @@ def processing_edit(request, pk):
                     item.tenant = item.department.tenant
 
             item.save()
+            form.save_retention_selections(item)
+
             action_result = generate_processing_actions(item)
             close_resolved_processing_actions(item)
 
